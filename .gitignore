@@ -1,1 +1,9 @@
 **/trials
+
+
+
+# extensions
+*.mod
+*.smod
+*.x
+*.sh
