@@ -2,7 +2,7 @@
 # - trials: contains trials 
 # - mods: contains the compiled modules
 
-**/objects
+#**/objects
 
 
 
