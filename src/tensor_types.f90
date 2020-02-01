@@ -1,0 +1,47 @@
+MODULE TENSOR_TYPES
+  IMPLICIT NONE
+
+
+  ! LIST OF MATRICES (ARBITRARY DIMENSION)
+  TYPE :: matrix_list
+     INTEGER, ALLOCATABLE :: fac_shape(:,:)
+  END TYPE  matrix_list
+
+  
+  ! TENSOR TYPES (DOUBLE PRECISION)
+  TYPE DTENSOR1
+     INTEGER*4::modes(1)
+     REAL*8,ALLOCATABLE::elems(:)
+  END TYPE DTENSOR1
+
+  TYPE DTENSOR2
+     INTEGER*4::modes(2)
+     REAL*8,ALLOCATABLE::elems(:,:)
+  END TYPE DTENSOR2
+
+  TYPE DTENSOR3
+     INTEGER*4::modes(3)
+     REAL*8,ALLOCATABLE::elems(:,:,:)
+  END TYPE DTENSOR3
+
+  TYPE DTENSOR4
+     INTEGER*4::modes(4)
+     REAL*8,ALLOCATABLE::elems(:,:,:,:)
+  END TYPE DTENSOR4
+
+  TYPE DTENSOR5
+     INTEGER*4::modes(5)
+     REAL*8,ALLOCATABLE::elems(:,:,:,:,:)
+  END TYPE DTENSOR5
+
+  TYPE DTENSOR6
+     INTEGER*4::modes(6)
+     REAL*8,ALLOCATABLE::elems(:,:,:,:,:,:)
+  END TYPE DTENSOR6
+
+  TYPE DTENSOR7
+     INTEGER*4::modes(7)
+     REAL*8,ALLOCATABLE::elems(:,:,:,:,:,:,:)
+  END TYPE DTENSOR7
+  
+END MODULE TENSOR_TYPES

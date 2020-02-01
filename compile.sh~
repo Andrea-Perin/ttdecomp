@@ -1,1 +1,0 @@
-gfortran products.f90 project.f90 -g -o project.x
