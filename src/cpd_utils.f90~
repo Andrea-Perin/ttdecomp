@@ -1,0 +1,243 @@
+MODULE CPD_UTILS
+
+  USE DEBUGGER
+  USE TENSOR_TYPES
+  USE MODE_N
+  USE MAT_UTILS
+  
+  IMPLICIT NONE
+
+  LOGICAL :: deb=.TRUE.
+
+CONTAINS
+
+
+  SUBROUTINE COL_NORM(matrix,norms)
+!!$==========================================================================================================     
+!!$    Normalizes the columns of a given matrix, and stores the columnwise norms inside norms.
+!!$    INOUT:
+!!$    - matrix    : (REAL*8) the input matrix to be normalized
+!!$    - norms     : (REAL*8) the vector which contains the norms of the columns
+!!$==========================================================================================================
+    ! INOUT VARIABLES
+    REAL*8 :: matrix(:,:), norms(:)
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii
+
+    DO ii=1,SIZE(matrix,2)
+       norms(ii)=SQRT(SUM(matrix(:,ii)**2))
+       matrix(:,ii)=matrix(:,ii)/norms(ii)
+    END DO
+  END SUBROUTINE COL_NORM
+    
+
+  
+
+!!$  SUBROUTINE CDP2()
+!!$  END SUBROUTINE CDP2
+  
+
+  SUBROUTINE CPD3(tensor, rank, thresh, factors, lambdas, error)
+!!$==========================================================================================================     
+!!$    Computes the Alternating Least Squares algorithm for the computation of the CDP decomposition.
+!!$    Each factor matrix is updated as
+!!$    B^(n) <- X_(n) (KHRAO_{k/=n} B^(k)) (HAD_{k/=n} B^(k)^T B^(k))^{INV}
+!!$    After this, the mean squared error is computed; the algorithm goes on as long as the error
+!!$    is larger than some threshold.
+!!$    INOUT:
+!!$    - tensor    : (REAL*8) the input matrix to be inverted
+!!$    - rank      : (INTEGER*4) the rank of the decomposition (nunmber of factors in the linear combination)
+!!$    - thresh    : (REAL*8) the threshold on the error
+!!$    - factors   : (matrix_list) the list of the factor matrices. Should be 3 elements long
+!!$    - lambdas   : (REAL*8) a vector containing the lambdas   
+!!$    - error     : (REAL*8) the reconstruction error
+!!$==========================================================================================================
+    ! INOUT VARIABLES
+    TYPE(DTENSOR3) :: tensor
+    INTEGER*4 :: rank
+    REAL*8 :: error, thresh
+    TYPE(matrix_list) :: factors(3)
+    REAL*8, ALLOCATABLE :: lambdas(:)
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii, jj, cnt, sizes(3), ridx(2), idx(3), ridsize, running_size, NN=SIZE(factors)
+    REAL*8, ALLOCATABLE :: B(:,:), V(:,:) !for the update; B=KR productory, V=Hadamard productory
+    REAL*8, ALLOCATABLE :: B_rec(:,:), tensor_rec(:,:) !for the reconstruction
+    REAL*8 :: newerror
+!!$==========================================================================================================
+!!$    Utility variables dictionary:
+!!$    - ii: counter, runs over the factor matrices
+!!$    - NN: the number of factor matrices (i.e., the order of the original tensor)
+!!$    - jj: counter, used to compute the productories
+!!$    - cnt: counter, used to keep track of the numebr of iterations
+!!$    - sizes: a vector that keeps track of the dimensions of the factor matrices
+!!$    - idx: an ARANGE vector, from 1 to NN
+!!$    - ridx: a reindexing vector, an ARANGE like vector but without one of the indices
+!!$    - ridsize: the size of ridx
+!!$    - running_size: an accumulator. Used while computing Khatri-Rao productories, stores the size of the portion
+!!$==========================================================================================================
+    ! FUNCTION DEFINITION
+    ! ALLOCATE THE VECTOR OF LAMBDAS
+    ALLOCATE(lambdas(rank))
+    ! ALLOCATE THE FACTOR MATRICES
+    ALLOCATE(factors(1)%matr(SIZE(tensor%elems,1),rank))
+    ALLOCATE(factors(2)%matr(SIZE(tensor%elems,2),rank))
+    ALLOCATE(factors(3)%matr(SIZE(tensor%elems,3),rank))
+    ! STORE THE DIMENSIONS OF THE FACTOR MATRICES
+    DO ii=1,NN
+       sizes(ii) = SIZE(factors(ii)%matr,1)
+    END DO
+    ! ALLOCATE THE RECONSTRUCTED TENSOR
+    ALLOCATE(tensor_rec(sizes(1),PRODUCT(sizes(2:3))))
+    ALLOCATE(B_rec(PRODUCT(sizes(2:3)),rank))
+    ! RANDOMLY INITIALIZE THE MATRICES
+    CALL RANDOM_NUMBER(factors(1)%matr)
+    CALL RANDOM_NUMBER(factors(2)%matr)
+    CALL RANDOM_NUMBER(factors(3)%matr)
+    CALL COL_NORM(factors(1)%matr,lambdas)
+    CALL COL_NORM(factors(2)%matr,lambdas)
+    CALL COL_NORM(factors(3)%matr,lambdas)
+    ! REPEAT UNTIL CONVERGENCE
+    error=1D4*SIZE(tensor%elems)
+    cnt = 0
+    DO WHILE ((error.GT.thresh).AND.(cnt.LT.200))
+       cnt=cnt+1
+       ! CYCLE OVER THE FACTOR MATRICES
+       DO ii=1,NN
+          ! REINDEXING: excludes the index ii
+          idx = (/(jj, jj=1,NN,1)/)
+          ridx = PACK(idx, idx/=ii)
+          ! COMPUTE THE KHATRI-RAO PRODUCTORY
+          ! allocate the necessary space
+          ALLOCATE(B(PRODUCT(sizes)/sizes(ii),rank))
+          ! keep track of the number of rows
+          running_size = sizes(ridx(1))*sizes(ridx(2))
+          ! compute the intial Khatri-Rao product
+          B(1:running_size,:) = factors(ridx(1))%matr.KHRAO.factors(ridx(2))%matr
+          ! continue the product
+          DO jj=3,ridsize
+             B(1:running_size*sizes(ridx(jj)),:) = B(1:running_size,:).KHRAO.factors(ridx(jj))%matr
+             running_size = running_size*sizes(ridx(jj))
+          END DO
+          ! COMPUTE THE HADAMARD PRODUCT
+          ALLOCATE(V(rank,rank))
+          V = 1D0
+          DO jj=1,ridsize
+             V = V.HAD.MTML(TRANSPOSE(factors(ridx(jj))%matr),factors(ridx(jj))%matr)
+          END DO
+          V = PINV(V)
+          ! COMPOSE EVERYTHING
+          factors(ii)%matr = MTML(MTML(tensor.MODE.ii,B),V)
+          CALL COL_NORM(factors(ii)%matr,lambdas) 
+          DEALLOCATE(B)
+          DEALLOCATE(V)
+       END DO
+
+       !===================================================================================================
+       ! RECONSTRUCT THE STARTING TENSOR
+       ! compute the Khatri-Rao productory of factor matrices
+       B_rec(1:sizes(2)*sizes(3),:) = factors(2)%matr.KHRAO.factors(3)%matr
+       running_size = sizes(2)*sizes(3)
+       DO ii=4,NN
+          B_rec(1:running_size*sizes(ii),:) = B_rec(1:running_size,:).KHRAO.factors(ii)%matr
+          running_size=running_size**sizes(ii)
+       END DO
+       ! put everything together
+       tensor_rec = MTML(factors(1)%matr,TRANSPOSE(B_rec))
+       
+       !===================================================================================================
+       ! COMPUTE THE MEAN SQUARE ERROR
+       newerror = SUM(((tensor.MODE.1)-tensor_rec)**2)/SIZE(tensor%elems)
+       print*, cnt, newerror
+       ! if the mean square error is not decreasing: print on screen!
+       IF (newerror.GT.error) THEN
+          WRITE(*,*) "WARNING: error did not decrease."
+       END IF
+       error = newerror
+    END DO
+  END SUBROUTINE CPD3
+
+
+
+  SUBROUTINE ANOTHER_CPD(tensor, rank, thresh, factors, lambdas, error)
+    TYPE(DTENSOR3) :: tensor
+    INTEGER*4 :: rank
+    REAL*8 :: thresh, error
+    TYPE(matrix_list) :: factors(3)
+    REAL*8, ALLOCATABLE :: lambdas(:)
+
+    INTEGER*4 :: sizes(3)
+    INTEGER*4 :: ii, jj, NN=SIZE(factors), maxiter=10, idx(2), krsize, cnt
+    REAL*8, ALLOCATABLE :: V(:,:), B(:,:)
+    REAL*8, ALLOCATABLE :: tensor_rec(:,:), B_rec(:,:)
+    REAL*8 :: newerror
+
+    
+    ! ALLOCATE THE VECTOR OF LAMBDAS
+    ALLOCATE(lambdas(rank))
+    ! STORE THE DIMENSIONS OF THE TENSOR, ALLOCATE THE FACTOR MATRICES AND NORMALIZE THEM
+    print*, tensor%modes(1)
+    DO ii=1,NN
+       ALLOCATE(factors(ii)%matr(tensor%modes(ii),rank))
+       CALL RANDOM_NUMBER(factors(ii)%matr)
+       CALL COL_NORM(factors(ii)%matr,lambdas)
+    END DO
+    ! ALLOCATE THE RECONSTRUCTION STUFF
+    ALLOCATE(tensor_rec(tensor%modes(1),PRODUCT(tensor%modes)/tensor%modes(1)))
+    ALLOCATE(B_rec(PRODUCT(tensor%modes(2:)),rank))    
+    ! REPEAT UNTIL CONVERGENCE OR EXCEEDED ITERATIONS
+    cnt=0
+    error=1D6
+    DO WHILE ((error.GT.thresh).AND.(cnt.LT.maxiter))
+       ! LOOP OVER THE FACTOR MATRICES
+       DO ii=1,NN
+          ! DETERMINE THE INDICES TO SKIP
+          idx = PACK( (/(jj, jj=1,NN,1)/) , (/(jj, jj=1,NN,1)/)/=ii )
+          ! COMPUTE V
+          ALLOCATE(V(rank,rank))
+          V=1D0
+          DO jj=1,SIZE(idx)
+             V = V.HAD.MTML(TRANSPOSE(factors(idx(jj))%matr),factors(idx(jj))%matr)
+          END DO
+          ! COMPUTE B
+          ALLOCATE(B(PRODUCT( (/(sizes(idx(jj)), jj=1,SIZE(idx),1)/) ),rank))
+          krsize = tensor%modes(idx(1))*tensor%modes(idx(2))
+          B(1:krsize,:) = factors(idx(2))%matr.KHRAO.factors(idx(1))%matr
+          DO jj=3,SIZE(idx)
+             B(1:krsize*tensor%modes(idx(jj)),:) = factors(idx(jj))%matr.KHRAO.B(1:krsize,:)
+             krsize=krsize*tensor%modes(idx(jj))
+          END DO
+          ! UPDATE THE ii-th FACTOR MATRIX 
+          factors(ii)%matr = MTML( MTML( (tensor.MODE.ii),B ), PINV(V) )
+          CALL COL_NORM(factors(ii)%matr, lambdas)
+          ! DEALLOCATE B AND V
+          DEALLOCATE(B)
+          DEALLOCATE(V)
+       END DO
+       ! RECONSTRUCT THE TENSOR
+       krsize = tensor%modes(2)*tensor%modes(3)
+       B_rec(1:krsize,:)=factors(3)%matr.KHRAO.factors(2)%matr
+       DO ii=4,NN
+          B_rec(1:krsize*tensor%modes(ii),:)=factors(ii)%matr.KHRAO.B_rec(1:krsize,:)
+          krsize=krsize*tensor%modes(ii)
+       END DO
+       DO ii=1,rank
+          factors(1)%matr(:,ii) = factors(1)%matr(:,ii)*lambdas(ii)
+       END DO
+       tensor_rec = MTML(factors(1)%matr, TRANSPOSE(B_rec)) 
+       ! COMPUTE THE ERROR (FROBENIUS NORM)
+       error = SQRT(SUM(((tensor.MODE.1)-tensor_rec)**2))
+       PRINT*, cnt, error
+    END DO
+  END SUBROUTINE ANOTHER_CPD
+
+
+
+
+
+
+
+
+  
+
+  
+END MODULE CPD_UTILS

@@ -4,7 +4,7 @@ MODULE TENSOR_TYPES
 
   ! LIST OF MATRICES (ARBITRARY DIMENSION)
   TYPE :: matrix_list
-     INTEGER, ALLOCATABLE :: fac_shape(:,:)
+     REAL*8, ALLOCATABLE :: matr(:,:)
   END TYPE  matrix_list
 
   
