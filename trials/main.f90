@@ -5,6 +5,7 @@ PROGRAM MAIN
   USE MODE_N
   USE SWAP_AXIS
   USE MAT_UTILS
+  USE CPD_UTILS
   
   IMPLICIT NONE
 
@@ -12,9 +13,19 @@ PROGRAM MAIN
   REAL*8,ALLOCATABLE::IN(:,:)
   INTEGER,ALLOCATABLE::vec(:)
   INTEGER::nn,rows,cols,kk,ii
+  
   TYPE(DTENSOR3)::my_tens,copy
-  !OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
-  OPEN(332,file='../data/prova.csv',status="old",action="read")
+
+
+  !JUST TO TRY...
+  TYPE(matrix_list) :: lista(3)
+  INTEGER*4 :: rango
+  REAL*8 :: threshold, error, array(3,3), cose(3)
+  REAL*8, ALLOCATABLE :: lambdas(:)
+
+  OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
+  !OPEN(332,file='../data/prova.csv',status="old",action="read")
+  
   READ (332, *) nn
   ALLOCATE(dimm(nn))
   READ(332,*) dimm
@@ -30,7 +41,7 @@ PROGRAM MAIN
   WRITE (6,*) nn
   WRITE (6,*) "info:",dimm
   WRITE (6,*) "MATRIX:"
-  CALL TENSOR3(dimm,IN,my_tens,3) ! assuming mode 1
+  CALL TENSOR3(dimm,IN,my_tens,1) ! assuming mode 1
   DO ii=1,dimm(2)
      WRITE(6,1) my_tens%elems(1,ii,:)
 1    FORMAT (*(F4.0:x)) 
@@ -44,4 +55,16 @@ PROGRAM MAIN
   DO ii=1,dimm(2)
      WRITE(6,1) copy%elems(1,ii,:) 
   END DO
+
+
+  rango=10
+  threshold=100d0
+
+  array = transpose(reshape((/ 1D0, 2D0, 3D0, 4D0, 5D0, 6D0, 7D0, 8D0, 9D0 /), shape(array)))
+  
+  CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
+  print*, error
+  
+
 END PROGRAM MAIN
+  

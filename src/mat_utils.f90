@@ -9,7 +9,10 @@ MODULE MAT_UTILS
   !- CUSTOM MATMUL
   !- SVD
   !- MOORE-PENROSE INVERSE
+  !- MATRIX-DIAGONAL VECTOR MUTIPLICATION
+  !- COLUMN-NORMALIZATION
 
+  
   IMPLICIT NONE
   REAL*8, PARAMETER :: pi=ACOS(-1d0)
 
@@ -155,10 +158,10 @@ CONTAINS
     ! INPUT ARGUMENTS
     REAL*4, DIMENSION(:,:), INTENT(IN) :: mat1,mat2
     ! OUTPUT
-    REAL*4, DIMENSION(SIZE(mat1,1)*SIZE(mat2,1) , SIZE(mat1,2)*SIZE(mat2,2)) :: S_KHRAO
+    REAL*4, DIMENSION(SIZE(mat1,1)*SIZE(mat2,1) , SIZE(mat1,2)) :: S_KHRAO
     ! UTILITY VARIABLES
     INTEGER*4 :: ii,jj,rows1,cols1,rows2,cols2
-    ! FUNCTION DEFINITION		
+    ! FUNCTION DEFINITION
     rows1=SIZE(mat1,1)
     cols1=SIZE(mat1,2)
     rows2=SIZE(mat2,1)
@@ -186,7 +189,7 @@ CONTAINS
     ! INPUT ARGUMENTS
     REAL*8, DIMENSION(:,:), INTENT(IN) :: mat1,mat2
     ! OUTPUT
-    REAL*8, DIMENSION(SIZE(mat1,1)*SIZE(mat2,1) , SIZE(mat1,2)*SIZE(mat2,2)) :: D_KHRAO
+    REAL*8, DIMENSION(SIZE(mat1,1)*SIZE(mat2,1) , SIZE(mat1,2)) :: D_KHRAO
     ! UTILITY VARIABLES
     INTEGER*4 :: ii,jj,rows1,cols1,rows2,cols2
     ! FUNCTION DEFINITION		
@@ -435,6 +438,58 @@ CONTAINS
     END IF
     RETURN
   END FUNCTION PINV
+
+
+  FUNCTION MTDG(matrix,diagonal)
+!!$===========================================================================
+!!$    This function computes the product of a matrix and a diagonal matrix,
+!!$    stored as an array.
+!!$    INPUT ARGUMENTS:
+!!$    - matrix    : (REAL*8) the input matrix 
+!!$    - norms     : (REAL*8) the input vector which represents the
+!!$                  diagonal matrix
+!!$    OUTPUT:
+!!$    - mtdg      : (REAL*8) the result of the matrix-matrix multiplication
+!!$===========================================================================
+    ! INOUT VARIABLES
+    REAL*8 :: matrix(:,:), diagonal(:)
+    REAL*8 :: mtdg(SIZE(matrix,1),SIZE(matrix,2))
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii
+
+    IF (SIZE(matrix,2).NE.SIZE(diagonal)) THEN
+       WRITE(*,*) "WARNING (MTDG): sizes do not match!"
+    END IF
+    DO ii=1,SIZE(matrix,2)
+       mtdg(:,ii)=matrix(:,ii)*diagonal(ii)
+    END DO
+    RETURN
+  END FUNCTION MTDG
+
+
+  
+  SUBROUTINE COL_NORM(matrix,norms)
+!!$===========================================================================
+!!$    Normalizes the columns of a given matrix, and stores the columnwise
+!!$    norms inside norms.
+!!$    INOUT:
+!!$    - matrix    : (REAL*8) the input matrix to be normalized
+!!$    - norms     : (REAL*8) the vector which contains the norms of the columns
+!!$===========================================================================
+    ! INOUT VARIABLES
+    REAL*8 :: matrix(:,:), norms(:)
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii
+    
+    IF (SIZE(matrix,2).NE.SIZE(norm)) THEN
+       WRITE(*,*) "WARNING (COL_NORM): sizes do not match!"
+    END IF
+    DO ii=1,SIZE(matrix,2)
+       norms(ii)=SQRT(SUM(matrix(:,ii)**2))
+       matrix(:,ii)=matrix(:,ii)/norms(ii)
+    END DO
+  END SUBROUTINE COL_NORM
+
 
 
 
