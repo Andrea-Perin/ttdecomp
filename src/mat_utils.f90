@@ -323,7 +323,7 @@ CONTAINS
     !INPUT/OUTPUT:
     !- AA 		: (REAL*8) the input matrix (size M*N)
     !- UU 		: (REAL*8) the left singular vectors matrix (size M*M)
-    !- SIG  	: (REAL*8) the singular values vector (size min(M,N))
+    !- SIG              : (REAL*8) the singular values vector (size min(M,N))
     !- VVT 		: (REAL*8) the TRANSPOSED right singular vectors matrix (size N*N)
     !- INFO		: (INTEGER*4) the info about how the subroutine worked out
     !====================================================================
@@ -494,21 +494,3 @@ CONTAINS
 
 
 END MODULE MAT_UTILS
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
