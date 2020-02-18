@@ -5,7 +5,7 @@ MODULE DEBUGGER
   !  Simply substitute <TYPE> with the desired data type. Do not forget to
   !  add the subroutine to the interface!
   !  
-  !  SUBROUTINE <TYPE>_DEBUG(debug,var,check,message)
+  !  SUBROUTINE <TYPE>_DEBUG(debug,check,message)
   !    ! a <TYPE> variable debugging subroutine.
   !    ! Calculates the truth value of check and prints
   !    ! the results.
@@ -21,6 +21,7 @@ MODULE DEBUGGER
   !
   
   INTERFACE DEBUG
+     MODULE PROCEDURE ANONYMOUS_DEBUG
      MODULE PROCEDURE INT4_DEBUG
      MODULE PROCEDURE INT2_DEBUG
      MODULE PROCEDURE REAL4_DEBUG
@@ -35,6 +36,21 @@ MODULE DEBUGGER
 
   
 CONTAINS
+
+  SUBROUTINE ANONYMOUS_DEBUG(debug,check,message)
+    ! a generic debugging subroutine.
+    ! Calculates the truth value of check and prints
+    ! the results.
+    LOGICAL :: debug,check
+    CHARACTER(LEN=*) :: message
+    IF (debug .and. check) THEN       
+       PRINT*, "---------------------"
+       PRINT*, "__DEBUG INFO__", check, " : ", message
+       PRINT*, "---------------------"
+    ENDIF
+  END SUBROUTINE ANONYMOUS_DEBUG
+
+
   
   SUBROUTINE INT4_DEBUG(debug,var,check,message)
     ! a 4-byte integer variable debugging subroutine.
