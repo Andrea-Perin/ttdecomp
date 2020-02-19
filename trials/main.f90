@@ -41,7 +41,7 @@ PROGRAM MAIN
   WRITE (6,*) nn
   WRITE (6,*) "info:",dimm
   WRITE (6,*) "MATRIX:"
-  CALL TENSOR3(dimm,IN,my_tens,1) ! assuming mode 1
+  my_tens=TENSOR3(dimm,IN,1) ! assuming mode 1
   DO ii=1,dimm(2)
      WRITE(6,1) my_tens%elems(1,ii,:)
 1    FORMAT (*(F4.0:x)) 

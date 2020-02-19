@@ -8,7 +8,7 @@ COMPFLAGS = -llapack -lblas
 DEBFLAGS = -g #-Wall
 OBJ_DIR = ../objects
 SRC_DIR = ../src
-OBJS = debugger.o tensor_types.o mode_n.o swap_axis.o mat_utils.o cpd_utils.o
+OBJS = debugger.o tensor_types.o mode_n.o swap_axis.o mat_utils.o cpd_utils.o tucker.o
 
 
 
@@ -39,6 +39,8 @@ mat_utils.o: $(SRC_DIR)/mat_utils.f90
 cpd_utils.o: $(SRC_DIR)/cpd_utils.f90 tensor_types.o mat_utils.o mode_n.o debugger.o
 	$(F90) $(OFLAGS) -I$(OBJ_DIR) -J$(OBJ_DIR) -c $(SRC_DIR)/cpd_utils.f90 $(COMPFLAGS) $(DEBFLAGS) -o $(OBJ_DIR)/$@
 
+tucker.o: $(SRC_DIR)/tucker.f90 tensor_types.o mat_utils.o mode_n.o debugger.o 
+	$(F90) $(OFLAGS) -I$(OBJ_DIR) -J$(OBJ_DIR) -c $(SRC_DIR)/tucker.f90 $(COMPFLAGS) $(DEBFLAGS) -o $(OBJ_DIR)/$@
 
 
 # For cleaning up the compilation files
