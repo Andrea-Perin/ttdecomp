@@ -28,26 +28,27 @@ CONTAINS
     TYPE(MATRIX_LIST) :: factors(3)
     ! UTILITY VARIABLES
     INTEGER*4 :: ii, info
-    INTEGER*4 :: SS(3)
-    REAL*8, ALLOCATABLE :: SIG(:,:), UU(:,:), VVT(:,:)
-    ! ALLOCATE THE MATRICES
-    SS = tens%modes
-    ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
+    INTEGER*4 :: new(3) ! new modes 
+    REAL*8, ALLOCATABLE :: SIG(:,:), UU(:,:), VVT(:,:), res(:,:)
+    ! ALLOCATE THE FACTORS
     DO ii=1,3
-       ALLOCATE(factors(ii)%matr(SS(ii),ranks(ii)))
+       ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
     END DO
     ! PERFORM SVD ON ALL POSSIBLE MODES
     DO ii=1,3
-       ALLOCATE(UU(SS(ii),SS(ii)))
-       ALLOCATE(SIG(SS(ii),PRODUCT(SS)/SS(ii)))
-       ALLOCATE(VVT(PRODUCT(SS)/SS(ii),PRODUCT(SS)/SS(ii)))
+       ALLOCATE(UU(tens%modes(ii),tens%modes(ii)))
+       ALLOCATE(SIG(tens%modes(ii),PRODUCT(tens%modes)/tens%modes(ii)))
+       ALLOCATE(VVT(PRODUCT(tens%modes)/tens%modes(ii),PRODUCT(tens%modes)/tens%modes(ii)))
        CALL SVD(tens%elems.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
        DEALLOCATE(UU)
        DEALLOCATE(SIG)
        DEALLOCATE(VVT)
     END DO
+    ! ALLOCATE CORE TENSOR
+    core%modes=ranks
+    ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
-    
+    res = RECO(tens,factors) ! RECO returns the nn mode
+    CALL TENSOR3(ranks,res,core,3) ! go from nn mode to tensor
   END SUBROUTINE HOSVD
-
