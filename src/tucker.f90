@@ -502,7 +502,8 @@ CONTAINS
 
 
   SUBROUTINE HOOI4(tensor, ranks, core, factors, error, verbose, numiter, thresh)
-    !=================================================================      !Returns core and factors of the Tucker Decomposition using HOOI.
+    !=================================================================
+    !Returns core and factors of the Tucker Decomposition using HOOI.
     !INPUT/OUTPUT:
     !- tensor 		: (DTENSOR4) the input tensor
     !- ranks 		: (INTEGER*4) the vector of ranks  
