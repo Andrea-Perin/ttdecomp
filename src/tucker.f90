@@ -14,12 +14,17 @@ MODULE TUCKER
   END INTERFACE HOSVD
 
 
+  ! INTERFACE FOR TUCKER-RELATED CORE COMPUTATION
+  INTERFACE TCORE
+     MODULE PROCEDURE TCORE3
+     MODULE PROCEDURE TCORE4
+  END INTERFACE TCORE
+
   ! INTERFACE FOR TUCKER-RELATED RECONSTRUCTION
   INTERFACE RECO
      MODULE PROCEDURE RECO3
-     MODULE PROCEDURE RECO4
+     !MODULE PROCEDURE RECO4
   END INTERFACE RECO
-     
 
 
 CONTAINS
@@ -27,21 +32,74 @@ CONTAINS
 
   !======================================================= 
   !======================================================= 
-  ! RECONSTRUCTIONS
+  ! RECOSTRUCTIONS
   !======================================================= 
-  !======================================================= 
+  !=======================================================
+
+
+  
+  FUNCTION RECO3(core, factors)
+    !==================================================================================
+    ! This function computes the reconstruction of the full tensor that is decomposed with the Tucker decomposition.
+    ! The full tensor is returned.
+    ! INPUT
+    ! - core     : (DTENSOR3) the core tensor
+    ! - factors  : (MATRIX_LIST) the list of factor matrices (in this case, Tucker factors)
+    ! OUTPUT
+    ! - RECO3    : (DTENSOR3) the full tensor
+    !==================================================================================   
+    TYPE(DTENSOR3) :: core,RECO3
+    TYPE(MATRIX_LIST) :: factors(3)
+    ! UTILITY VARIABLES
+    REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
+    INTEGER*4 :: ranks(SIZE(factors)), newmodes(SIZE(factors))
+    INTEGER*4 :: NN=SIZE(factors), ii
+
+
+    ! FILL THE RANKS
+    DO ii=1,NN
+       ranks(ii) = SIZE(factors(ii)%matr,1)
+    END DO
+    ! From now on:
+    ! - Xhat contains the mode_n representation of the enhanced core
+    ! - Xtilde contains the matrix product of Xhat with a factor matrix
+    ! In the beginning,
+    newmodes = core%modes
+    ALLOCATE(Xhat(core%modes(1), PRODUCT(core%modes(2:))))
+    Xhat=core.MODE.1
+    DO ii=1,NN-1
+       ! Update nemwodes: the ii-th entry becomes rank(ii)
+       newmodes(ii)=ranks(ii)
+       ! In Xhat2, store the matrix product of the mode_n tensor and the factor matrix
+       ALLOCATE(Xtilde(newmodes(ii), PRODUCT(newmodes)/newmodes(ii)))
+       Xtilde = MTML(factors(ii)%matr, Xhat)
+       DEALLOCATE(Xhat)
+       ALLOCATE(Xhat(newmodes(ii+1),PRODUCT(newmodes)/newmodes(ii+1) ))
+       Xhat = TENSOR3(newmodes,Xtilde,ii).MODE.(ii+1)
+       ! Now, Xhat has become the n-mode representation of the running mode-n product.
+       ! Xtilde can be deallocated.
+       DEALLOCATE(Xtilde)
+    END DO
+    ! The last Xtilde will contain the mode_NN representation of the tensor
+    newmodes(NN)=ranks(NN)
+    ALLOCATE(Xtilde(newmodes(NN),PRODUCT(newmodes(1:NN-1))) )
+    Xtilde = MTML(factors(NN)%matr, Xhat)
+    RECO3 = TENSOR3(newmodes,Xtilde,NN)
+    RETURN
+  END FUNCTION RECO3
+  
   
 
-  FUNCTION RECO3(tensor, factors) RESULT(Xtilde)
+  FUNCTION TCORE3(tensor, factors) RESULT(Xtilde)
     !==================================================================================
     ! This function computes the reconstruction of a core tensor that is employed in the Tucker decomposition.
     ! The NN-mode (in this case, 3) of the core tensor is returned. If the core tensor is needed, just employ
     ! the proper TENSOR(N) function.
     ! INPUT
-    ! - tensor    : (DTENSOR3) the input tensor
-    ! - factors   : (MATRIX_LIST) the list of factor matrices (in this case, Tucker factors)
+    ! - tensor     : (DTENSOR3) the input tensor
+    ! - factors    : (MATRIX_LIST) the list of factor matrices (in this case, Tucker factors)
     ! OUTPUT
-    ! - Xtilde    : (REAL*8) the matrix of size (R_NN, prod_{n=1}^NN-1 R_i)
+    ! - Xtilde     : (REAL*8) the matrix of size (R_NN, prod_{n=1}^NN-1 R_i)
     !==================================================================================   
     TYPE(DTENSOR3) :: tensor
     TYPE(MATRIX_LIST) :: factors(3)
@@ -50,6 +108,7 @@ CONTAINS
     INTEGER*4 :: ranks(SIZE(factors)), newmodes(SIZE(factors))
     INTEGER*4 :: NN=SIZE(factors), ii
 
+    
     ! FILL THE RANKS
     DO ii=1,NN
        ranks(ii) = SIZE(factors(ii)%matr,2)
@@ -79,10 +138,10 @@ CONTAINS
     ALLOCATE(Xtilde(newmodes(NN),PRODUCT(newmodes(1:NN-1))) )
     Xtilde = MTML(TRANSPOSE(factors(NN)%matr), Xhat)
     RETURN
-  END FUNCTION RECO3
+  END FUNCTION TCORE3
 
   
-  FUNCTION RECO4(tensor, factors) RESULT(Xtilde)
+  FUNCTION TCORE4(tensor, factors) RESULT(Xtilde)
     !==================================================================================
     ! This function computes the reconstruction of a core tensor that is employed in the Tucker decomposition.
     ! The NN-mode (in this case, 4) of the core tensor is returned. If the core tensor is needed, just employ
@@ -129,7 +188,7 @@ CONTAINS
     ALLOCATE(Xtilde(newmodes(NN),PRODUCT(newmodes(1:NN-1))) )
     Xtilde = MTML(TRANSPOSE(factors(NN)%matr), Xhat)
     RETURN
-  END FUNCTION RECO4 
+  END FUNCTION TCORE4
 
 
   !======================================================= 
@@ -172,7 +231,7 @@ CONTAINS
     core%modes=ranks
     ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
-    res = RECO(tens,factors) ! RECO returns the nn mode
+    res = TCORE(tens,factors) ! TCORE returns the nn mode
     core = TENSOR3(ranks,res,3) ! go from nn mode to tensor
   END SUBROUTINE HOSVD3
   
@@ -261,7 +320,7 @@ CONTAINS
        END DO
        !RECONSTRUCT THE TENSOR AND COMPUTE THE ERROR
        ! Compute the error 
-       newerror = SQRT(SUM(tensor%elems**2)-SUM(RECO(tensor,factors)**2))/SIZE(tensor%elems)
+       newerror = SQRT(SUM(tensor%elems**2)-SUM(TCORE(tensor,factors)**2))/SIZE(tensor%elems)
        relative_error = ABS((error-newerror)/error)
        error = newerror
        ! If verbose is on, output the current error
@@ -270,7 +329,7 @@ CONTAINS
        END IF
     END DO
     ! COMPUTE THE CORE TENSOR
-    core = TENSOR3(ranks,RECO(tensor,factors),NN)
+    core = TENSOR3(ranks,TCORE(tensor,factors),NN)
   END SUBROUTINE HOOI3
 
 
