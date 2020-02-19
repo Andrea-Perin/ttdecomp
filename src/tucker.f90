@@ -18,7 +18,6 @@ MODULE TUCKER
   INTERFACE RECO
      MODULE PROCEDURE RECO3
      MODULE PROCEDURE RECO4
-     MODULE PROCEDURE RECO5
   END INTERFACE RECO
      
 
@@ -70,7 +69,7 @@ CONTAINS
        Xtilde = MTML(TRANSPOSE(factors(ii)%matr), Xhat)
        DEALLOCATE(Xhat)
        ALLOCATE(Xhat(newmodes(ii+1),PRODUCT(newmodes)/newmodes(ii+1) ))
-       Xhat = (TENSOR3(newmodes,Xtilde,ii)).MODE.(ii+1)
+       Xhat = TENSOR3(newmodes,Xtilde,ii).MODE.(ii+1)
        ! Now, Xhat has become the n-mode representation of the running mode-n product.
        ! Xtilde can be deallocated.
        DEALLOCATE(Xtilde)
@@ -94,7 +93,7 @@ CONTAINS
     ! OUTPUT
     ! - Xtilde    : (REAL*8) the matrix of size (R_NN, prod_{n=1}^NN-1 R_i)
     !==================================================================================   
-    TYPE(DTENSOR3) :: tensor
+    TYPE(DTENSOR4) :: tensor
     TYPE(MATRIX_LIST) :: factors(4)
     ! UTILITY VARIABLES
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
@@ -120,7 +119,7 @@ CONTAINS
        Xtilde = MTML(TRANSPOSE(factors(ii)%matr), Xhat)
        DEALLOCATE(Xhat)
        ALLOCATE(Xhat(newmodes(ii+1),PRODUCT(newmodes)/newmodes(ii+1) ))
-       Xhat = (TENSOR4(newmodes,Xtilde,ii)).MODE.(ii+1)
+       Xhat = TENSOR4(newmodes,Xtilde,ii).MODE.(ii+1)
        ! Now, Xhat has become the n-mode representation of the running mode-n product.
        ! Xtilde can be deallocated.
        DEALLOCATE(Xtilde)
@@ -130,61 +129,7 @@ CONTAINS
     ALLOCATE(Xtilde(newmodes(NN),PRODUCT(newmodes(1:NN-1))) )
     Xtilde = MTML(TRANSPOSE(factors(NN)%matr), Xhat)
     RETURN
-  END FUNCTION RECO4
-
-
-  FUNCTION RECO5(tensor, factors) RESULT(Xtilde)
-    !==================================================================================
-    ! This function computes the reconstruction of a core tensor that is employed in the Tucker decomposition.
-    ! The NN-mode (in this case, 5) of the core tensor is returned. If the core tensor is needed, just employ
-    ! the proper TENSOR(N) function.
-    ! INPUT
-    ! - tensor    : (DTENSOR5) the input tensor
-    ! - factors   : (MATRIX_LIST) the list of factor matrices (in this case, Tucker factors)
-    ! OUTPUT
-    ! - Xtilde    : (REAL*8) the matrix of size (R_NN, prod_{n=1}^NN-1 R_i)
-    !==================================================================================   
-    TYPE(DTENSOR3) :: tensor
-    TYPE(MATRIX_LIST) :: factors(5)
-    ! UTILITY VARIABLES
-    REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
-    INTEGER*4 :: ranks(SIZE(factors)), newmodes(SIZE(factors))
-    INTEGER*4 :: NN=SIZE(factors), ii
-
-    ! FILL THE RANKS
-    DO ii=1,NN
-       ranks(ii) = SIZE(factors(ii)%matr,2)
-    END DO
-    ! From now on:
-    ! - Xhat contains the mode_n representation of the tensor
-    ! - Xtilde contains the matrix product of Xhat with a factor matrix
-    ! In the beginning,
-    newmodes = tensor%modes
-    ALLOCATE(Xhat(tensor%modes(1), PRODUCT(tensor%modes(2:))))
-    Xhat=tensor.MODE.1
-    DO ii=1,NN-1
-       ! Update nemwodes: the ii-th entry becomes rank(ii)
-       newmodes(ii)=ranks(ii)
-       ! In Xhat2, store the matrix product of the mode_n tensor and the factor matrix
-       ALLOCATE(Xtilde(newmodes(ii), PRODUCT(newmodes)/newmodes(ii)))
-       Xtilde = MTML(TRANSPOSE(factors(ii)%matr), Xhat)
-       DEALLOCATE(Xhat)
-       ALLOCATE(Xhat(newmodes(ii+1),PRODUCT(newmodes)/newmodes(ii+1) ))
-       Xhat = (TENSOR5(newmodes,Xtilde,ii)).MODE.(ii+1)
-       ! Now, Xhat has become the n-mode representation of the running mode-n product.
-       ! Xtilde can be deallocated.
-       DEALLOCATE(Xtilde)
-    END DO
-    ! The last Xtilde will contain the mode_NN representation of the tensor
-    newmodes(NN)=ranks(NN)
-    ALLOCATE(Xtilde(newmodes(NN),PRODUCT(newmodes(1:NN-1))) )
-    Xtilde = MTML(TRANSPOSE(factors(NN)%matr), Xhat)
-    RETURN
-  END FUNCTION RECO5
-
-
-
-  
+  END FUNCTION RECO4 
 
 
   !======================================================= 
@@ -210,21 +155,18 @@ CONTAINS
     ! UTILITY VARIABLES
     INTEGER*4 :: ii, info
     INTEGER*4 :: new(3) ! new modes 
-    REAL*8, ALLOCATABLE :: SIG(:,:), UU(:,:), VVT(:,:), res(:,:)
+    REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
     ! ALLOCATE THE FACTORS
     DO ii=1,3
        ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
     END DO
     ! PERFORM SVD ON ALL POSSIBLE MODES
     DO ii=1,3
-       ALLOCATE(UU(tens%modes(ii),tens%modes(ii)))
-       ALLOCATE(SIG(tens%modes(ii),PRODUCT(tens%modes)/tens%modes(ii)))
-       ALLOCATE(VVT(PRODUCT(tens%modes)/tens%modes(ii),PRODUCT(tens%modes)/tens%modes(ii)))
-       CALL SVD(tens%elems.MODE.ii,UU,SIG,VVT,info)
+       IF (ALLOCATED(UU)) DEALLOCATE(UU)
+       IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
+       IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
+       CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
-       DEALLOCATE(UU)
-       DEALLOCATE(SIG)
-       DEALLOCATE(VVT)
     END DO
     ! ALLOCATE CORE TENSOR
     core%modes=ranks
@@ -286,7 +228,7 @@ CONTAINS
           ! - Xhat1 will store the tensor in one of its mode_n representations.
           ! - Xhat2 will store the matrix product of Xhat1 with one of the factor matrices.
           !
-          ALLOCATE(Xhat(newmodes(idx(1))),PRODUCT(newmodes)/newmodes(idx(1)))
+          ALLOCATE(Xhat(newmodes(idx(1)),PRODUCT(newmodes)/newmodes(idx(1))))
           Xhat=tensor.MODE.idx(1)
           DO jj=1,SIZE(idx)
              !
@@ -306,7 +248,7 @@ CONTAINS
              ! product of the "running sizes".
              DEALLOCATE(Xhat)
              ALLOCATE(Xhat(newmodes(idx(jj+1)), PRODUCT(newmodes)/newmodes(idx(jj+1))))
-             Xhat=(TENSOR3(newmodes,Xtilde,idx(jj))).MODE.idx(jj+1)
+             Xhat=TENSOR3(newmodes,Xtilde,idx(jj)).MODE.idx(jj+1)
              ! Now that Xhat has become, once again, the matrix representation of the "current iteration" of the tensor,
              ! Xtilde can be safely deallocated, in order to prepare it to the next iteration, where it will contain
              ! the matrix product of the next step. 
@@ -314,12 +256,12 @@ CONTAINS
           END DO
           ! GET THE FIRST R_N LEADING LEFT SINGULAR VECTORS OF Y_ii (which has not been actually created!)
           CALL SVD(Xhat,UU,SIGMA,VV,INFO)
-          factors(ii)%matr=UU(:,ranks(ii))
+          factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
        END DO
        !RECONSTRUCT THE TENSOR AND COMPUTE THE ERROR
        ! Compute the error 
-       newerror = SQRT(SUM(tensor**2)-SUM(RECO(tensor,factors)**2))/SIZE(tensor)
+       newerror = SQRT(SUM(tensor%elems**2)-SUM(RECO(tensor,factors)**2))/SIZE(tensor%elems)
        relative_error = ABS((error-newerror)/error)
        error = newerror
        ! If verbose is on, output the current error
@@ -327,12 +269,8 @@ CONTAINS
           WRITE(*,*) cnt, error, relative_error
        END IF
     END DO
-    ! ALLOCATE CORE TENSOR
-    core%modes=ranks
-    ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
-    core%modes = ranks
-    core%elems = TENSOR(ranks,RECO(tensor,factors),NN)
+    core = TENSOR3(ranks,RECO(tensor,factors),NN)
   END SUBROUTINE HOOI3
 
 
