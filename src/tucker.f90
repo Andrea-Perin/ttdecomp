@@ -255,8 +255,8 @@ CONTAINS
     ! UTILITY VARIABLES
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)       !matrices for mode-n product
     REAL*8, ALLOCATABLE :: UU(:,:), VV(:,:), SIGMA(:)   !matrices for SVD
-    INTEGER*4 :: ii, jj, NN=SIZE(factors), cnt, idx(2), INFO
-    INTEGER*4 :: newmodes(3)
+    INTEGER*4 :: ii, jj, NN=SIZE(factors), cnt, idx(SIZE(factors)), INFO
+    INTEGER*4 :: newmodes(SIZE(factors))
     REAL*8 :: relative_error, newerror
     INTEGER*4 :: maxiter=500
     REAL*8 :: threshold=5D-6
@@ -272,6 +272,9 @@ CONTAINS
     ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
     CALL HOSVD(tensor,ranks,core,factors)
     ! REPEAT UNTIL CONVERGENCE
+    !do ii=1,NN
+       !print*, SHAPE(factors(ii)%matr)
+    !end do
     cnt=0
     relative_error=1
     DO WHILE ((relative_error.GT.threshold).AND.(cnt.LT.maxiter))
@@ -279,6 +282,9 @@ CONTAINS
        DO ii=1,NN
           ! DETERMINE THE INDICES TO SKIP
           idx = PACK( (/(jj, jj=1,NN,1)/) , (/(jj, jj=1,NN,1)/)/=ii )
+          idx(NN) = ii
+          !PRINT*, "CIAO"
+          !PRINT*, idx
           ! KEEP TRACK OF THE CHANGES IN THE MODES
           newmodes = tensor%modes
           ! PERFORM THE MODE-N PRODUCTS WITHOUT SAVING ANY HIGH ORDER TENSOR
@@ -289,7 +295,7 @@ CONTAINS
           !
           ALLOCATE(Xhat(newmodes(idx(1)),PRODUCT(newmodes)/newmodes(idx(1))))
           Xhat=tensor.MODE.idx(1)
-          DO jj=1,SIZE(idx)
+          DO jj=1,NN-1
              !
              ! IMPORTANT: recall that we are reindexing, using idx, in order to skip the ii-th index.
              ! As such, all quantities are indexed by idx(jj), and not by jj!
@@ -314,6 +320,10 @@ CONTAINS
              DEALLOCATE(Xtilde)
           END DO
           ! GET THE FIRST R_N LEADING LEFT SINGULAR VECTORS OF Y_ii (which has not been actually created!)
+          IF (ALLOCATED(UU)) DEALLOCATE(UU)
+          IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
+          IF (ALLOCATED(VV)) DEALLOCATE(VV)
+          !print*, "dc", SIZE(XhAt,1)
           CALL SVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)

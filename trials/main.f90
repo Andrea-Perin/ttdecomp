@@ -69,6 +69,7 @@ PROGRAM MAIN
   ALLOCATE(ranks(3))
   ranks = (/ 15,15,15 /)
   CALL HOSVD(my_tens,ranks,core,lista)
+  !CALL HOOI3(my_tens,ranks,core,lista,error)
   PRINT*, "fine"
   ALLOCATE(tmp(28,2800))
   approx = RECO(core,lista)
