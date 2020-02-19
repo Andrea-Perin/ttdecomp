@@ -27,7 +27,7 @@ debugger.o: $(SRC_DIR)/debugger.f90
 tensor_types.o: $(SRC_DIR)/tensor_types.f90
 	$(F90) $(OFLAGS) -I$(OBJ_DIR) -J$(OBJ_DIR) -c $(SRC_DIR)/tensor_types.f90 $(COMPFLAGS) $(DEBFLAGS) -o $(OBJ_DIR)/$@
 
-mode_n.o: $(SRC_DIR)/mode_n.f90 tensor_types.o
+mode_n.o: $(SRC_DIR)/mode_n.f90 tensor_types.o mat_utils.o
 	$(F90) $(OFLAGS) -I$(OBJ_DIR) -J$(OBJ_DIR) -c $(SRC_DIR)/mode_n.f90 $(COMPFLAGS) $(DEBFLAGS) -o $(OBJ_DIR)/$@
 
 swap_axis.o: $(SRC_DIR)/swap_axis.f90 tensor_types.o

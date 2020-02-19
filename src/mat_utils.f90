@@ -481,7 +481,7 @@ CONTAINS
     ! UTILITY VARIABLES
     INTEGER*4 :: ii
     
-    IF (SIZE(matrix,2).NE.SIZE(norm)) THEN
+    IF (SIZE(matrix,2).NE.SIZE(norms)) THEN
        WRITE(*,*) "WARNING (COL_NORM): sizes do not match!"
     END IF
     DO ii=1,SIZE(matrix,2)
