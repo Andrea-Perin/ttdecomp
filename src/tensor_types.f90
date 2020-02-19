@@ -97,7 +97,7 @@ CONTAINS
   SUBROUTINE TENSOR4(modes,mat,tens,cm)
     ! cm = current mode
     INTEGER::modes(4),cm,new_modes(3)
-    REAL*8,ALLOCATABLE::mat(:,:)
+    REAL*8::mat(:,:)
     TYPE(DTENSOR4)::tens
     INTEGER::ii
     ALLOCATE(tens%elems(modes(1),modes(2),modes(3),modes(4)))
