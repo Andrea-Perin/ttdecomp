@@ -39,7 +39,7 @@ CONTAINS
     INTEGER*4 :: ii
     ! FUNCTION DEFINITION
     tmp_mat=MTML(matt,tens.MODE.nn)
-    CALL TENSOR3(tens%modes,tmp_mat,NPROD3,nn)
+    NPROD3 = TENSOR3(tens%modes,tmp_mat,nn)
     RETURN
   END FUNCTION NPROD3
 
