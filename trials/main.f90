@@ -11,24 +11,25 @@ PROGRAM MAIN
   IMPLICIT NONE
 
   INTEGER,ALLOCATABLE::dimm(:)
-  REAL*8,ALLOCATABLE::IN(:,:),boh1(:,:),boh2(:,:)
+  REAL*8,ALLOCATABLE::IN(:,:),boh1(:,:),boh2(:,:),tmp(:,:)
   INTEGER,ALLOCATABLE::vec(:),ranks(:)
   INTEGER::nn,rows,cols,kk,ii
-  TYPE(DTENSOR3)::my_tens,copy,core
+  TYPE(DTENSOR3)::my_tens,copy,approx,core
   !JUST TO TRY...
   TYPE(matrix_list) :: lista(3)
   INTEGER*4 :: rango
   REAL*8 :: threshold, error, array(3,3), cose(3)
   REAL*8, ALLOCATABLE :: lambdas(:)
-  OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
+  !OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
+  OPEN(332,file='../data/mnist_small.csv',status="old",action="read")
   !OPEN(332,file='../data/prova.csv',status="old",action="read") 
   READ (332, *) nn
   ALLOCATE(dimm(nn))
   READ(332,*) dimm
   rows=dimm(1)
   cols=1
-  DO kk=1,nn-1
-     cols=cols*dimm(1+kk)
+  DO kk=2,nn
+     cols=cols*dimm(kk)
   END DO
   ALLOCATE(IN(cols,rows))
   READ(332,*) IN
@@ -66,7 +67,20 @@ PROGRAM MAIN
   !CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
   !print*, error
   ALLOCATE(ranks(3))
-  ranks = (/ 10,10,10 /)
+  ranks = (/ 15,15,15 /)
   CALL HOSVD(my_tens,ranks,core,lista)
+  PRINT*, "fine"
+  ALLOCATE(tmp(28,2800))
+  approx = RECO(core,lista)
+  !PRINT*, SHAPE(approx%elems)
+  OPEN(333,file='../data/mnist_reco.csv',status="unknown",action="write")
+  DO ii=1,28
+     WRITE(333,*) approx%elems(1,ii,:) 
+  END DO
+  CLOSE(333)
+  !DO ii=1,28
+  !   WRITE(6,2) INT(approx%elems(1,ii,:))
+!2    FORMAT (*(I3:x)) 
+  !END DO
 END PROGRAM MAIN
   
