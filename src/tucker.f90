@@ -133,7 +133,7 @@ CONTAINS
   END FUNCTION RECO4
 
 
-  FUNCTION RECO3(tensor, factors) RESULT(Xtilde)
+  FUNCTION RECO5(tensor, factors) RESULT(Xtilde)
     !==================================================================================
     ! This function computes the reconstruction of a core tensor that is employed in the Tucker decomposition.
     ! The NN-mode (in this case, 5) of the core tensor is returned. If the core tensor is needed, just employ
