@@ -5,7 +5,7 @@ PROGNAME = main
 F90 = gfortran
 OFLAGS = -O0
 COMPFLAGS = -llapack -lblas
-DEBFLAGS = -g #-Wall
+DEBFLAGS = -g #-ftrace=full #-Wall
 OBJ_DIR = ../objects
 SRC_DIR = ../src
 OBJS = debugger.o tensor_types.o mode_n.o swap_axis.o mat_utils.o cpd_utils.o tucker.o
