@@ -296,7 +296,7 @@ CONTAINS
     INTEGER*4 :: new(SIZE(factors)) ! new modes 
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
     ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
-    IF (ANY(ranks.GT.tensor%modes)) THEN
+    IF (ANY(ranks.GT.tens%modes)) THEN
        WRITE(*,*) "WARNING (HOSVD3): at least one rank > respective size"
     END IF
     ! ALLOCATE THE FACTORS
@@ -343,7 +343,7 @@ CONTAINS
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
 
     ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
-    IF (ANY(ranks.GT.tensor%modes)) THEN
+    IF (ANY(ranks.GT.tens%modes)) THEN
        WRITE(*,*) "WARNING (HOSVD4): at least one rank > respective size"
     END IF
     ! ALLOCATE THE FACTORS
