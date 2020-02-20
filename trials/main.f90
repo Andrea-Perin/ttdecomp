@@ -76,9 +76,27 @@ PROGRAM MAIN
      WRITE(333,*) approx%elems(ii,:,:) 
   END DO
   CLOSE(333)
+
   !DO ii=1,28
   !   WRITE(6,2) INT(approx%elems(1,ii,:))
 !2    FORMAT (*(I3:x)) 
   !END DO
+
+
+  !CP DECOMPOSITION
+  rango=40
+  CALL CPD(my_tens,rango,lista,lambdas,error,numiter=2)
+  ! RECONSTRUCT
+  core = TENSOR3( (/rango,rango,rango/) , TO_IDENTITY(lambdas,SIZE(my_tens%modes)) , 1 )
+  approx = RECO3(core,lista)
+  ! SAVE ON FILE
+  OPEN(333,file='../data/cpd_land_40.csv',status="unknown",action="write")
+  DO ii=1,dimm(1)
+     WRITE(333,*) approx%elems(ii,:,:) 
+  END DO
+  CLOSE(333)
+
+
+  
 END PROGRAM MAIN
   
