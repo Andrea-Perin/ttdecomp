@@ -21,8 +21,9 @@ PROGRAM MAIN
   REAL*8 :: threshold, error, array(3,3), cose(3)
   REAL*8, ALLOCATABLE :: lambdas(:)
   !OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
-  OPEN(332,file='../data/mnist_small.csv',status="old",action="read")
-  !OPEN(332,file='../data/prova.csv',status="old",action="read") 
+  !OPEN(332,file='../data/mnist_small.csv',status="old",action="read")
+  !OPEN(332,file='../data/prova.csv',status="old",action="read")
+  OPEN(332,file='../data/small_landscape.csv',status="old",action="read")
   READ (332, *) nn
   ALLOCATE(dimm(nn))
   READ(332,*) dimm
@@ -67,12 +68,12 @@ PROGRAM MAIN
   !CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
   !print*, error
   ALLOCATE(ranks(3))
-  ranks = (/ 30,10,10 /)
+  ranks = (/ 20,20,3 /)
   CALL HOSVD(my_tens,ranks,core,lista)
   !CALL HOOI3(my_tens,ranks,core,lista,error)
   approx = RECO(core,lista)
   !PRINT*, SHAPE(approx%elems)
-  OPEN(333,file='../data/hosvd_small_30_10_10.csv',status="unknown",action="write")
+  OPEN(333,file='../data/hosvd_small_20_20_3.csv',status="unknown",action="write")
   DO ii=1,100
      WRITE(333,*) approx%elems(ii,:,:) 
   END DO
