@@ -339,20 +339,36 @@ CONTAINS
   END SUBROUTINE CPD5
 
 
+
+
+  ! ====================================
+  ! ====================================
+  ! CP RECONSTRUCTION
+  ! ====================================
+  ! ====================================
+
+
+
+
+
+
+  
   ! ====================================
   ! ====================================
   ! TO IDENTITY
   ! ====================================
   ! ====================================
 
-  FUNCTION TO_IDENTITY(vector)
+  FUNCTION TO_IDENTITY(vector, order)
     ! ======================================================
     ! This function takes a vector, containing the lambdas
-    ! of the CPD decomposition, and turns it into its
-    ! mode-1 representation. From there, it can be easily
+    ! of the CPD decomposition, and turns it into the
+    ! mode-1 representation of the corresponding core.
+    ! From there, it can be easily
     ! turned into a tensor.
     ! INPUT ARGUMENTS
     ! - vector       : (REAL*8) the vector of the lambdas.
+    ! - order        : (INTEGER*4) the order of the tensor
     ! Its size is equal to the rank.
     ! OUTPUT ARGUMENTS
     ! - TO_IDENTITY  : (REAL*8) the mode-1 representation
@@ -360,15 +376,16 @@ CONTAINS
     ! ======================================================    
     ! INOUT VARIABLES
     REAL*8 :: vector(:)
+    INTEGER*4 :: order
     REAL*8, ALLOCATABLE :: TO_IDENTITY(:,:)
     ! UTILITY VARIABLES
     INTEGER*4 :: ii, RR
     
     RR = SIZE(vector)
-    ALLOCATE(TO_IDENTITY(RR,RR**(RR-1)))
+    ALLOCATE(TO_IDENTITY(RR,RR**(order-1)))
     TO_IDENTITY = 0D0
     DO ii=1,RR
-       TO_IDENTITY(ii,RR*(ii-1)+ii) = 1D0
+       TO_IDENTITY(ii,RR*(ii-1)+ii) = vector(ii)
     END DO
     RETURN
   END FUNCTION TO_IDENTITY
