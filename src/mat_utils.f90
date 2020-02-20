@@ -364,7 +364,53 @@ CONTAINS
 
 
 
+  SUBROUTINE TSVD(AA,UU,SIG,VVT,INFO)
+    !====================================================================
+    !Returns the truncated SVD of the matrix AA.
+    !INPUT/OUTPUT:
+    !- AA 		: (REAL*8) the input matrix (size M*N)
+    !- UU 		: (REAL*8) the left singular vectors matrix (size M*MIN(M,N))
+    !- SIG              : (REAL*8) the singular values vector (size min(M,N))
+    !- VVT 		: (REAL*8) the TRANSPOSED right singular vectors matrix (size MIN(N,M)*N)
+    !- INFO		: (INTEGER*4) the info about how the subroutine worked out
+    !====================================================================
+    ! INOUT VARIABLES
+    REAL*8 :: AA(:,:)
+    REAL*8, ALLOCATABLE :: UU(:,:), VVT(:,:), SIG(:)
+    INTEGER*4 :: INFO
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii, MM, NN, LWORK
+    REAL*8, ALLOCATABLE :: WORK(:),COPY(:,:)
+    ! FUNCTION DEFINITION
+    ! ALLOCATE THE MATRICES
+    MM = SIZE(AA,1)
+    NN = SIZE(AA,2)
+    ALLOCATE(UU(MM,MIN(MM,NN))) ! ONLY THE FIRST MIN(MM,NN) COLS ARE STORED
+    ALLOCATE(VVT(MIN(NN,MM),NN)) ! ONLY THE FIRST MIN(MM,NN) ROWS ARE STORED
+    ALLOCATE(SIG(MIN(MM,NN)))
+    ALLOCATE(COPY(MM,NN))
+    COPY = AA
+    ! QUERY WORKSPACE
+    LWORK = -1
+    ALLOCATE(WORK(1))
+    CALL DGESVD('S', 'S', MM, NN, AA, MM, SIG, UU, MM, VVT, NN, WORK, LWORK, INFO)
+    LWORK = WORK(1)
+    DEALLOCATE(WORK)
+    ALLOCATE(WORK(LWORK))
+    ! PERFORM SVD
+    CALL DGESVD('S', 'S', MM, NN, AA, MM, SIG, UU, MM, VVT, NN, WORK, LWORK, INFO)
+    !CHECK RESULTS
+    IF (INFO.LT.0) THEN
+       WRITE (*,*) 'ERROR (TSVD): Illegal argument at position ', -INFO
+    ELSEIF (INFO.GT.0) THEN
+       WRITE (*,*) 'WARNING (TSVD): Failed convergence in ', INFO, &
+            'superdiagonals of an intermediate bidiagonal form.'
+    END IF
+    AA = COPY
+  END SUBROUTINE TSVD
 
+  
+  
   FUNCTION MTML(AA,BB)
     !====================================================================
     !Performs matrix-matrix multiplication between AA and BB.
@@ -493,4 +539,10 @@ CONTAINS
 
 
 
+
+
+
+
+
+  
 END MODULE MAT_UTILS
