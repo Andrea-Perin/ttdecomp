@@ -308,14 +308,11 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       PRINT*, "before svd cycle:",ii
        CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
-       PRINT*, "after svd cycle:",ii
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
     core%modes=ranks
-    PRINT*, "before allocate core"
     ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
     res = TCORE(tens,factors) ! TCORE returns the nn mode
@@ -500,7 +497,6 @@ CONTAINS
           IF (ALLOCATED(UU)) DEALLOCATE(UU)
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
-          !print*, "dc", SIZE(XhAt,1)
           CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
