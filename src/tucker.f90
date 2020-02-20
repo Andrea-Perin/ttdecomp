@@ -62,7 +62,6 @@ CONTAINS
     INTEGER*4 :: ranks(SIZE(factors)), newmodes(SIZE(factors))
     INTEGER*4 :: NN=SIZE(factors), ii
 
-
     ! FILL THE RANKS
     DO ii=1,NN
        ranks(ii) = SIZE(factors(ii)%matr,1)
@@ -70,7 +69,6 @@ CONTAINS
     ! From now on:
     ! - Xhat contains the mode_n representation of the enhanced core
     ! - Xtilde contains the matrix product of Xhat with a factor matrix
-    ! In the beginning,
     newmodes = core%modes
     ALLOCATE(Xhat(core%modes(1), PRODUCT(core%modes(2:))))
     Xhat=core.MODE.1
@@ -126,7 +124,6 @@ CONTAINS
     ! From now on:
     ! - Xhat contains the mode_n representation of the enhanced core
     ! - Xtilde contains the matrix product of Xhat with a factor matrix
-    ! In the beginning,
     newmodes = core%modes
     ALLOCATE(Xhat(core%modes(1), PRODUCT(core%modes(2:))))
     Xhat=core.MODE.1
@@ -154,13 +151,13 @@ CONTAINS
     RETURN
   END FUNCTION RECO4
 
+
   
   !======================================================= 
   !======================================================= 
   ! TUCKER CORES
   !======================================================= 
   !======================================================= 
-
 
   FUNCTION TCORE3(tensor, factors) RESULT(Xtilde)
     !=================================================================
@@ -191,7 +188,6 @@ CONTAINS
     ! From now on:
     ! - Xhat contains the mode_n representation of the tensor
     ! - Xtilde contains the matrix product of Xhat with a factor matrix
-    ! In the beginning,
     newmodes = tensor%modes
     ALLOCATE(Xhat(tensor%modes(1), PRODUCT(tensor%modes(2:))))
     Xhat=tensor.MODE.1
@@ -247,7 +243,6 @@ CONTAINS
     ! From now on:
     ! - Xhat contains the mode_n representation of the tensor
     ! - Xtilde contains the matrix product of Xhat with a factor matrix
-    ! In the beginning,
     newmodes = tensor%modes
     ALLOCATE(Xhat(tensor%modes(1), PRODUCT(tensor%modes(2:))))
     Xhat=tensor.MODE.1
@@ -275,12 +270,12 @@ CONTAINS
   END FUNCTION TCORE4
 
 
+
   !======================================================= 
   !======================================================= 
   ! HOSVD
   !======================================================= 
-  !======================================================= 
-    
+  !=======================================================   
   
   SUBROUTINE HOSVD3(tens,ranks,core,factors)
     !=================================================================
@@ -300,6 +295,10 @@ CONTAINS
     INTEGER*4 :: ii, info, NN=SIZE(factors)
     INTEGER*4 :: new(SIZE(factors)) ! new modes 
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
+    ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
+    IF (ANY(ranks.GT.tens%modes)) THEN
+       WRITE(*,*) "WARNING (HOSVD3): at least one rank > respective size"
+    END IF
     ! ALLOCATE THE FACTORS
     DO ii=1,NN
        ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
@@ -339,6 +338,11 @@ CONTAINS
     INTEGER*4 :: ii, info, NN=SIZE(factors)
     INTEGER*4 :: new(SIZE(factors)) ! new modes 
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
+
+    ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
+    IF (ANY(ranks.GT.tens%modes)) THEN
+       WRITE(*,*) "WARNING (HOSVD4): at least one rank > respective size"
+    END IF
     ! ALLOCATE THE FACTORS
     DO ii=1,NN
        ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
@@ -367,8 +371,7 @@ CONTAINS
   !======================================================= 
   !======================================================= 
   
-
-  SUBROUTINE HOOI3(tensor, ranks, core, factors, error, verbose, numiter, thresh)
+  SUBROUTINE HOOI3(tensor, ranks, core, factors, error, verbose, numiter, thresh, randinit)
     !=================================================================
     !Returns core and factors of the Tucker Decomposition using HOOI.
     !INPUT/OUTPUT:
@@ -386,6 +389,8 @@ CONTAINS
     !                     iterations
     !- thresh           : (REAL*8, OPTIONAL) the threshold on the
     !                     relative error decrease
+    !- randinit         : (LOGICAL, OPTIONAL) whether to use a random initialization
+    !                     instead of the HOSVD step
     !=================================================================
     ! INOUT VARIABLES
     TYPE(DTENSOR3) :: tensor, core
@@ -395,6 +400,7 @@ CONTAINS
     REAL*8, OPTIONAL :: thresh
     INTEGER*4, OPTIONAL :: numiter
     LOGICAL, OPTIONAL :: verbose
+    LOGICAL, OPTIONAL :: randinit
     ! UTILITY VARIABLES
     !matrices for mode-n product
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
@@ -407,6 +413,10 @@ CONTAINS
     REAL*8 :: threshold=5D-6
     
     ! ACTUAL FUNCTION
+    ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
+    IF (ANY(ranks.GT.tensor%modes)) THEN
+       WRITE(*,*) "WARNING (HOOI3): at least one rank > respective size"
+    END IF
     ! SET OPTIONAL PARAMETERS
     IF (PRESENT(thresh).AND.(thresh.GT.1D-15)) THEN
        threshold=thresh
@@ -414,8 +424,17 @@ CONTAINS
     IF (PRESENT(numiter).AND.(numiter.GT.1)) THEN
        maxiter=numiter
     END IF   
-    ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
-    CALL HOSVD(tensor,ranks,core,factors)
+    ! INITIALIZE THE FACTOR MATRICES
+    IF (PRESENT(randinit).AND.(randinit)) THEN
+       ! RANDOM INITIALIZATION
+       DO ii=1,NN
+          ALLOCATE(factors(ii)%matr(tensor%modes(ii),ranks(ii)))
+          CALL RANDOM_NUMBER(factors(ii)%matr)
+       END DO
+    ELSE
+       ! HOSVD INITIALIZATION
+       CALL HOSVD(tensor,ranks,core,factors)
+    END IF
     ! REPEAT UNTIL CONVERGENCE
     cnt=0
     relative_error=1
@@ -497,7 +516,7 @@ CONTAINS
   END SUBROUTINE HOOI3
 
 
-  SUBROUTINE HOOI4(tensor, ranks, core, factors, error, verbose, numiter, thresh)
+  SUBROUTINE HOOI4(tensor, ranks, core, factors, error, verbose, numiter, thresh, randinit)
     !=================================================================
     !Returns core and factors of the Tucker Decomposition using HOOI.
     !INPUT/OUTPUT:
@@ -515,6 +534,8 @@ CONTAINS
     !                     of iterations
     !- thresh           : (REAL*8, OPTIONAL) the threshold on the
     !                     relative error decrease
+    !- randinit         : (LOGICAL, OPTIONAL) whether to use a random initialization
+    !                     instead of the HOSVD step
     !=================================================================
     ! INOUT VARIABLES
     TYPE(DTENSOR4) :: tensor, core
@@ -524,6 +545,7 @@ CONTAINS
     REAL*8, OPTIONAL :: thresh
     INTEGER*4, OPTIONAL :: numiter
     LOGICAL, OPTIONAL :: verbose
+    LOGICAL, OPTIONAL :: randinit
     ! UTILITY VARIABLES
     !matrices for mode-n product
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
@@ -536,6 +558,10 @@ CONTAINS
     REAL*8 :: threshold=5D-6
     
     ! ACTUAL FUNCTION
+    ! CHECK DIMENSIONS: RANKS MUST BE SMALLER THAN ACTUAL SIZES
+    IF (ANY(ranks.GT.tensor%modes)) THEN
+       WRITE(*,*) "WARNING (HOOI4): at least one rank > respective size"
+    END IF
     ! SET OPTIONAL PARAMETERS
     IF (PRESENT(thresh).AND.(thresh.GT.1D-15)) THEN
        threshold=thresh
@@ -543,8 +569,17 @@ CONTAINS
     IF (PRESENT(numiter).AND.(numiter.GT.1)) THEN
        maxiter=numiter
     END IF   
-    ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
-    CALL HOSVD(tensor,ranks,core,factors)
+    ! INITIALIZE THE FACTOR MATRICES
+    IF (PRESENT(randinit).AND.(randinit)) THEN
+       ! RANDOM INITIALIZATION
+       DO ii=1,NN
+          ALLOCATE(factors(ii)%matr(tensor%modes(ii),ranks(ii)))
+          CALL RANDOM_NUMBER(factors(ii)%matr)
+       END DO
+    ELSE
+       ! HOSVD INITIALIZATION
+       CALL HOSVD(tensor,ranks,core,factors)
+    END IF
     ! REPEAT UNTIL CONVERGENCE
     cnt=0
     relative_error=1
