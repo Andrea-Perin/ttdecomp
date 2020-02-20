@@ -374,7 +374,7 @@ CONTAINS
   !======================================================= 
   !======================================================= 
   
-  SUBROUTINE HOOI3(tensor, ranks, core, factors, error, verbose, numiter, thresh)
+  SUBROUTINE HOOI3(tensor, ranks, core, factors, error, verbose, numiter, thresh, randinit)
     !=================================================================
     !Returns core and factors of the Tucker Decomposition using HOOI.
     !INPUT/OUTPUT:
@@ -392,6 +392,8 @@ CONTAINS
     !                     iterations
     !- thresh           : (REAL*8, OPTIONAL) the threshold on the
     !                     relative error decrease
+    !- randinit         : (LOGICAL, OPTIONAL) whether to use a random initialization
+    !                     instead of the HOSVD step
     !=================================================================
     ! INOUT VARIABLES
     TYPE(DTENSOR3) :: tensor, core
@@ -401,6 +403,7 @@ CONTAINS
     REAL*8, OPTIONAL :: thresh
     INTEGER*4, OPTIONAL :: numiter
     LOGICAL, OPTIONAL :: verbose
+    LOGICAL, OPTIONAL :: randinit
     ! UTILITY VARIABLES
     !matrices for mode-n product
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
@@ -424,8 +427,17 @@ CONTAINS
     IF (PRESENT(numiter).AND.(numiter.GT.1)) THEN
        maxiter=numiter
     END IF   
-    ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
-    CALL HOSVD(tensor,ranks,core,factors)
+    ! INITIALIZE THE FACTOR MATRICES
+    IF (PRESENT(randinit).AND.(randinit)) THEN
+       ! RANDOM INITIALIZATION
+       DO ii=1,NN
+          ALLOCATE(factors(ii)%matr(tensor%modes(ii),ranks(ii)))
+          CALL RANDOM_NUMBER(factors(ii)%matr)
+       END DO
+    ELSE
+       ! HOSVD INITIALIZATION
+       CALL HOSVD(tensor,ranks,core,factors)
+    END IF
     ! REPEAT UNTIL CONVERGENCE
     cnt=0
     relative_error=1
@@ -508,7 +520,7 @@ CONTAINS
   END SUBROUTINE HOOI3
 
 
-  SUBROUTINE HOOI4(tensor, ranks, core, factors, error, verbose, numiter, thresh)
+  SUBROUTINE HOOI4(tensor, ranks, core, factors, error, verbose, numiter, thresh, randinit)
     !=================================================================
     !Returns core and factors of the Tucker Decomposition using HOOI.
     !INPUT/OUTPUT:
@@ -526,6 +538,8 @@ CONTAINS
     !                     of iterations
     !- thresh           : (REAL*8, OPTIONAL) the threshold on the
     !                     relative error decrease
+    !- randinit         : (LOGICAL, OPTIONAL) whether to use a random initialization
+    !                     instead of the HOSVD step
     !=================================================================
     ! INOUT VARIABLES
     TYPE(DTENSOR4) :: tensor, core
@@ -535,6 +549,7 @@ CONTAINS
     REAL*8, OPTIONAL :: thresh
     INTEGER*4, OPTIONAL :: numiter
     LOGICAL, OPTIONAL :: verbose
+    LOGICAL, OPTIONAL :: randinit
     ! UTILITY VARIABLES
     !matrices for mode-n product
     REAL*8, ALLOCATABLE :: Xhat(:,:), Xtilde(:,:)
@@ -558,8 +573,17 @@ CONTAINS
     IF (PRESENT(numiter).AND.(numiter.GT.1)) THEN
        maxiter=numiter
     END IF   
-    ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
-    CALL HOSVD(tensor,ranks,core,factors)
+    ! INITIALIZE THE FACTOR MATRICES
+    IF (PRESENT(randinit).AND.(randinit)) THEN
+       ! RANDOM INITIALIZATION
+       DO ii=1,NN
+          ALLOCATE(factors(ii)%matr(tensor%modes(ii),ranks(ii)))
+          CALL RANDOM_NUMBER(factors(ii)%matr)
+       END DO
+    ELSE
+       ! HOSVD INITIALIZATION
+       CALL HOSVD(tensor,ranks,core,factors)
+    END IF
     ! REPEAT UNTIL CONVERGENCE
     cnt=0
     relative_error=1
