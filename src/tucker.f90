@@ -301,6 +301,7 @@ CONTAINS
     INTEGER*4 :: new(SIZE(factors)) ! new modes 
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
     ! ALLOCATE THE FACTORS
+    PRINT*, "before allocate factors"
     DO ii=1,NN
        ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
     END DO
@@ -310,10 +311,12 @@ CONTAINS
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
        CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
+       PRINT*, "after performing svd, cycle step: ",ii
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
     core%modes=ranks
+    PRINT*, "before allocate core"
     ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
     res = TCORE(tens,factors) ! TCORE returns the nn mode
