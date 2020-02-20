@@ -301,7 +301,6 @@ CONTAINS
     INTEGER*4 :: new(SIZE(factors)) ! new modes 
     REAL*8, ALLOCATABLE :: SIG(:), UU(:,:), VVT(:,:), res(:,:)
     ! ALLOCATE THE FACTORS
-    PRINT*, "before allocate factors"
     DO ii=1,NN
        ALLOCATE(factors(ii)%matr(tens%modes(ii),ranks(ii)))
     END DO
@@ -310,14 +309,11 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       PRINT*, "before svd cycle:",ii
        CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
-       PRINT*, "after svd cycle:",ii
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
     core%modes=ranks
-    PRINT*, "before allocate core"
     ALLOCATE(core%elems(ranks(1),ranks(2),ranks(3)))
     ! COMPUTE THE CORE TENSOR
     res = TCORE(tens,factors) ! TCORE returns the nn mode
@@ -421,9 +417,6 @@ CONTAINS
     ! INITIALIZE THE FACTOR MATRICES WITH HOSVD
     CALL HOSVD(tensor,ranks,core,factors)
     ! REPEAT UNTIL CONVERGENCE
-    !do ii=1,NN
-       !print*, SHAPE(factors(ii)%matr)
-    !end do
     cnt=0
     relative_error=1
     DO WHILE ((relative_error.GT.threshold).AND.(cnt.LT.maxiter))
@@ -485,7 +478,6 @@ CONTAINS
           IF (ALLOCATED(UU)) DEALLOCATE(UU)
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
-          !print*, "dc", SIZE(XhAt,1)
           CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
