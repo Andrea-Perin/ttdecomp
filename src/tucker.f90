@@ -309,7 +309,7 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
+       CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
@@ -348,7 +348,7 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
+       CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
@@ -482,7 +482,7 @@ CONTAINS
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
           !print*, "dc", SIZE(XhAt,1)
-          CALL SVD(Xhat,UU,SIGMA,VV,INFO)
+          CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
        END DO
@@ -610,7 +610,7 @@ CONTAINS
           IF (ALLOCATED(UU)) DEALLOCATE(UU)
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
-          CALL SVD(Xhat,UU,SIGMA,VV,INFO)
+          CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
        END DO
