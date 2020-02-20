@@ -310,8 +310,7 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
-       PRINT*, "after performing svd, cycle step: ",ii
+       CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
@@ -351,7 +350,7 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
-       CALL SVD(tens.MODE.ii,UU,SIG,VVT,info)
+       CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR
@@ -485,7 +484,7 @@ CONTAINS
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
           !print*, "dc", SIZE(XhAt,1)
-          CALL SVD(Xhat,UU,SIGMA,VV,INFO)
+          CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
        END DO
@@ -613,7 +612,7 @@ CONTAINS
           IF (ALLOCATED(UU)) DEALLOCATE(UU)
           IF (ALLOCATED(SIGMA)) DEALLOCATE(SIGMA)
           IF (ALLOCATED(VV)) DEALLOCATE(VV)
-          CALL SVD(Xhat,UU,SIGMA,VV,INFO)
+          CALL TSVD(Xhat,UU,SIGMA,VV,INFO)
           factors(ii)%matr=UU(:,1:ranks(ii))
           DEALLOCATE(Xhat)
        END DO
@@ -632,4 +631,72 @@ CONTAINS
   END SUBROUTINE HOOI4
 
 
+
+
+
+
+
+  ! NON NEGATIVE TUCKER DECOMPOSITION(?)
+
+  ! SUBROUTINE MU_NTD3(tensor, ranks, core, factors)
+  !   ! INOUT VARIABLES
+  !   TYPE(DTENSOR3) :: tensor
+  !   INTEGER*4 :: ranks(3)
+  !   TYPE(DTENSOR3) :: core
+  !   TYPE(MATRIX_LIST) :: factors(3)
+  !   ! UTILITY VARIABLES
+  !   TYPE(MATRIX_LIST) :: fac_tilde(3)
+  !   TYPE(DTENSOR3) :: core_tilde, XX, XX_tilde
+  !   INTEGER*4 :: ii, cnt, cnv_cnt, maxiter=100, NN=SIZE(factors)
+  !   REAL*8 :: error, relative_error, threshold=1D-6
+
+  !   ! INITIALIZATION OF TILDED VARIABLES USING HOSVD
+  !   CALL HOSVD(tensor,ranks,core_tilde,fac_tilde)
+  !   ! INITIALIZATION OF UNTILDED VARIABLES
+  !   DO ii=1,NN
+  !      ALLOCATE(factors(ii)%matr(tensor%modes(ii), ranks(ii)))
+  !      CALL RANDOM_NUMBER(factors(ii)%matr)
+  !   END DO
+  !   core = TENSOR3()
+
+
+    
+  !   ! CONTINUE UP UNTIL CONVERGENCE
+  !   relative_error = 1D0
+  !   cnt = 0
+  !   DO WHILE ((cnt.LT.maxiter).AND.(relative_error.GT.threshold))
+  !      cnt=cnt+1
+  !      ! LOOP OVER THE FACTOR MATRICES
+  !      DO ii=1,NN
+  !         ! UNTIL CONVERGENCE, UPDATE X, XTILDE, A^(ii)
+  !         cnv_cnt=0
+  !         DO WHILE (().AND.())
+  !            cnv_cnt=cnv_cnt+1
+             
+
+
+             
+  !         END DO
+
+  !         ! UNTIL CONVERGENCE, UPDATE CORE
+  !         DO WHILE (().AND.())
+
+  !         END DO
+
+
+          
+  !      END DO
+    
+    
+
+
+
+
+
+
+  ! END SUBROUTINE MU_NTD3
+
+
+
+  
 END MODULE TUCKER

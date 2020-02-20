@@ -23,6 +23,14 @@ MODULE CPD_UTILS
 CONTAINS
 
 
+
+  ! ====================================
+  ! ====================================
+  ! CANONIC POLYADIC DECOMPOSITION
+  ! ====================================
+  ! ====================================
+  
+
   SUBROUTINE CPD3(tensor, rank, factors, lambdas, error, thresh, numiter, verbose)
 !!$==========================================================================================================     
 !!$    Computes the Alternating Least Squares algorithm for the CPD decomposition.
@@ -331,5 +339,41 @@ CONTAINS
   END SUBROUTINE CPD5
 
 
+  ! ====================================
+  ! ====================================
+  ! TO IDENTITY
+  ! ====================================
+  ! ====================================
+
+  FUNCTION TO_IDENTITY(vector)
+    ! ======================================================
+    ! This function takes a vector, containing the lambdas
+    ! of the CPD decomposition, and turns it into its
+    ! mode-1 representation. From there, it can be easily
+    ! turned into a tensor.
+    ! INPUT ARGUMENTS
+    ! - vector       : (REAL*8) the vector of the lambdas.
+    ! Its size is equal to the rank.
+    ! OUTPUT ARGUMENTS
+    ! - TO_IDENTITY  : (REAL*8) the mode-1 representation
+    !                  of the diagonal tensor of lambdas.
+    ! ======================================================    
+    ! INOUT VARIABLES
+    REAL*8 :: vector(:)
+    REAL*8, ALLOCATABLE :: TO_IDENTITY(:,:)
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii, RR
+    
+    RR = SIZE(vector)
+    ALLOCATE(TO_IDENTITY(RR,RR**(RR-1)))
+    TO_IDENTITY = 0D0
+    DO ii=1,RR
+       TO_IDENTITY(ii,RR*(ii-1)+ii) = 1D0
+    END DO
+    RETURN
+  END FUNCTION TO_IDENTITY
+
+
+    
 
 END MODULE CPD_UTILS
