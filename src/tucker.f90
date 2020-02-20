@@ -310,7 +310,9 @@ CONTAINS
        IF (ALLOCATED(UU)) DEALLOCATE(UU)
        IF (ALLOCATED(SIG)) DEALLOCATE(SIG)
        IF (ALLOCATED(VVT)) DEALLOCATE(VVT)
+       PRINT*, "before svd cycle:",ii
        CALL TSVD(tens.MODE.ii,UU,SIG,VVT,info)
+       PRINT*, "after svd cycle:",ii
        factors(ii)%matr=UU(:,1:ranks(ii))
     END DO
     ! ALLOCATE CORE TENSOR

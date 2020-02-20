@@ -68,13 +68,13 @@ PROGRAM MAIN
   !CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
   !print*, error
   ALLOCATE(ranks(3))
-  ranks = (/ 20,20,3 /)
+  ranks = (/ 10,20,3 /)
   CALL HOSVD(my_tens,ranks,core,lista)
   !CALL HOOI3(my_tens,ranks,core,lista,error)
   approx = RECO(core,lista)
   !PRINT*, SHAPE(approx%elems)
-  OPEN(333,file='../data/hosvd_small_20_20_3.csv',status="unknown",action="write")
-  DO ii=1,100
+  OPEN(333,file='../data/hosvd_land_10_20_3.csv',status="unknown",action="write")
+  DO ii=1,dimm(1)
      WRITE(333,*) approx%elems(ii,:,:) 
   END DO
   CLOSE(333)
