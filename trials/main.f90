@@ -11,7 +11,7 @@ PROGRAM MAIN
   IMPLICIT NONE
 
   INTEGER,ALLOCATABLE::dimm(:)
-  REAL*8,ALLOCATABLE::IN(:,:),boh1(:,:),boh2(:,:),tmp(:,:)
+  REAL*8,ALLOCATABLE::IN(:,:),boh1(:,:),boh2(:,:)
   INTEGER,ALLOCATABLE::vec(:),ranks(:)
   INTEGER::nn,rows,cols,kk,ii
   TYPE(DTENSOR3)::my_tens,copy,approx,core
@@ -35,14 +35,14 @@ PROGRAM MAIN
   READ(332,*) IN
   IN=TRANSPOSE(IN)
   CLOSE(332)
-  WRITE (6,*) nn
-  WRITE (6,*) "info:",dimm
-  WRITE (6,*) "MATRIX:"
+  !WRITE (6,*) nn
+  !WRITE (6,*) "info:",dimm
+  !WRITE (6,*) "MATRIX:"
   my_tens=TENSOR3(dimm,IN,1) ! assuming mode 1
-  DO ii=1,dimm(2)
-     WRITE(6,1) my_tens%elems(1,ii,:)
-1    FORMAT (*(F4.0:x)) 
-  END DO
+  !DO ii=1,dimm(2)
+  !   WRITE(6,1) my_tens%elems(1,ii,:)
+!1    FORMAT (*(F4.0:x)) 
+  !END DO
   ! WRITE (6,*) "dimensioni del tensore"
   ! ALLOCATE(vec(3))
   ! vec = SHAPE(my_tens%elems)
@@ -67,16 +67,14 @@ PROGRAM MAIN
   !CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
   !print*, error
   ALLOCATE(ranks(3))
-  ranks = (/ 15,15,15 /)
+  ranks = (/ 30,10,10 /)
   CALL HOSVD(my_tens,ranks,core,lista)
   !CALL HOOI3(my_tens,ranks,core,lista,error)
-  PRINT*, "fine"
-  ALLOCATE(tmp(28,2800))
   approx = RECO(core,lista)
   !PRINT*, SHAPE(approx%elems)
-  OPEN(333,file='../data/mnist_reco.csv',status="unknown",action="write")
-  DO ii=1,28
-     WRITE(333,*) approx%elems(1,ii,:) 
+  OPEN(333,file='../data/hosvd_small_30_10_10.csv',status="unknown",action="write")
+  DO ii=1,100
+     WRITE(333,*) approx%elems(ii,:,:) 
   END DO
   CLOSE(333)
   !DO ii=1,28
