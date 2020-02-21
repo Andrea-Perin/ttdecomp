@@ -7,7 +7,7 @@
 ### IGNORED EXTENSIONS
 
 # Emacs stuff...
-*.*~
+*.f90~
 
 # Prerequisites
 *.d
