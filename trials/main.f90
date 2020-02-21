@@ -21,7 +21,7 @@ PROGRAM MAIN
   REAL*8 :: threshold, error, array(3,3), cose(3)
   REAL*8, ALLOCATABLE :: lambdas(:)
   !OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
-  OPEN(332,file='../data/land_478_1024.csv',status="old",action="read")
+  OPEN(332,file='../data/land_112_240.csv',status="old",action="read")
   READ (332, *) nn
   ALLOCATE(dimm(nn))
   READ(332,*) dimm
@@ -34,69 +34,33 @@ PROGRAM MAIN
   READ(332,*) IN
   IN=TRANSPOSE(IN)
   CLOSE(332)
-  !WRITE (6,*) nn
-  !WRITE (6,*) "info:",dimm
-  !WRITE (6,*) "MATRIX:"
   my_tens=TENSOR3(dimm,IN,1) ! assuming mode 1
-  !DO ii=1,dimm(2)
-  !   WRITE(6,1) my_tens%elems(1,ii,:)
-!1    FORMAT (*(F4.0:x)) 
-  !END DO
-  ! WRITE (6,*) "dimensioni del tensore"
-  ! ALLOCATE(vec(3))
-  ! vec = SHAPE(my_tens%elems)
-  ! WRITE (6,*) vec
-  ! ALLOCATE(copy%elems(vec(1),vec(2),vec(3)))
-  ! copy%elems=my_tens%elems
-  ! DO ii=1,dimm(2)
-  !    WRITE(6,1) copy%elems(1,ii,:) 
-  ! END DO
-  ! ALLOCATE(boh1(2,2))
-  ! ALLOCATE(boh2(2,2))
-  ! boh1 = RESHAPE((/ 1, 2, 3, 4 /), SHAPE(boh1))
-  ! PRINT*, "CIAO1"
-  ! boh2 = NPROD3(my_tens,boh1,1).MODE.3
-  ! PRINT*, "CIAO2"
-  ! DO ii=1,SIZE(boh2,1)
-  !    WRITE(6,*) boh2(ii,:) 
-  ! END DO
-  !rango=10
-  !threshold=100d0
-  !array = transpose(reshape((/ 1D0, 2D0, 3D0, 4D0, 5D0, 6D0, 7D0, 8D0, 9D0 /), shape(array)))
-  !CALL CPD3(my_tens, rango, lista, lambdas, error, verbose=.TRUE.)
-  !print*, error
+
+  !TUCKER DECOMPOSITION
   ALLOCATE(ranks(3))
-  ranks = (/ 50,100,3 /)
+  ranks = (/ 10,20,3 /)
   CALL HOSVD(my_tens,ranks,core,lista)
-  !CALL HOOI3(my_tens,ranks,core,lista,error)
+  !CALL HOOI3(my_tens,ranks,core,lista,error,randinit=.TRUE.)
   approx = RECO(core,lista)
-  !PRINT*, SHAPE(approx%elems)
-  OPEN(333,file='../data/land_478_1024_hosvd_50_100_3.csv',status="unknown",action="write")
+  OPEN(333,file='../data/land_112_240_hosvd_10_20_3.csv',status="unknown",action="write")
+  !OPEN(333,file='../data/mnist_1k_random_300_10_10.csv',status="unknown",action="write")
   DO ii=1,dimm(1)
      WRITE(333,*) approx%elems(ii,:,:) 
   END DO
   CLOSE(333)
 
-  !DO ii=1,28
-  !   WRITE(6,2) INT(approx%elems(1,ii,:))
-!2    FORMAT (*(I3:x)) 
-  !END DO
-
-
-  !CP DECOMPOSITION
-  rango=40
-  CALL CPD(my_tens,rango,lista,lambdas,error,numiter=2)
-  ! RECONSTRUCT
-  core = TENSOR3( (/rango,rango,rango/) , TO_IDENTITY(lambdas,SIZE(my_tens%modes)) , 1 )
-  approx = RECO3(core,lista)
-  ! SAVE ON FILE
-  OPEN(333,file='../data/cpd_land_40.csv',status="unknown",action="write")
-  DO ii=1,dimm(1)
-     WRITE(333,*) approx%elems(ii,:,:) 
-  END DO
-  CLOSE(333)
-
-
+  ! !CP DECOMPOSITION
+  ! rango=10
+  ! CALL CPD(my_tens,rango,lista,lambdas,error,numiter=2)
+  ! !RECONSTRUCT
+  ! core = TENSOR3( (/rango,rango,rango/) , TO_IDENTITY(lambdas,SIZE(my_tens%modes)) , 1 )
+  ! approx = RECO3(core,lista)
+  ! !SAVE ON FILE
+  ! OPEN(333,file='../data/land_112_240_cpd_10_iter_2.csv',status="unknown",action="write")
+  ! DO ii=1,dimm(1)
+  !   WRITE(333,*) approx%elems(ii,:,:) 
+  ! END DO
+  ! CLOSE(333)
   
 END PROGRAM MAIN
   
