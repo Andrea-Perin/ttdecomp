@@ -6,7 +6,7 @@ MODULE TENSOR_TYPES
   TYPE :: matrix_list
      REAL*8, ALLOCATABLE :: matr(:,:)
   END TYPE  matrix_list
-
+  
   
   ! TENSOR TYPES (DOUBLE PRECISION)
   TYPE DTENSOR1
@@ -43,6 +43,12 @@ MODULE TENSOR_TYPES
      INTEGER*4::modes(7)
      REAL*8,ALLOCATABLE::elems(:,:,:,:,:,:,:)
   END TYPE DTENSOR7
+
+
+  ! LIST OF TENSORS
+  TYPE :: tensor_list
+     TYPE(DTENSOR3) :: cores
+  END TYPE  tensor_list
 
   
 CONTAINS

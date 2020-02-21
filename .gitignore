@@ -6,6 +6,9 @@
 
 ### IGNORED EXTENSIONS
 
+# Emacs stuff...
+*.*~
+
 # Prerequisites
 *.d
 
