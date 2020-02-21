@@ -7,6 +7,7 @@ PROGRAM MAIN
   USE MAT_UTILS
   USE CPD_UTILS
   USE TUCKER
+  USE MPS_MOD
   
   IMPLICIT NONE
 
@@ -16,7 +17,9 @@ PROGRAM MAIN
   INTEGER::nn,rows,cols,kk,ii
   TYPE(DTENSOR4)::my_tens,copy,approx,core
   !JUST TO TRY...
-  TYPE(matrix_list) :: lista(4)
+  TYPE(matrix_list) :: lista(3)
+  TYPE(tensor_list) :: tens_lista(3)
+  
   INTEGER*4 :: rango
   REAL*8 :: threshold, error
   REAL*8, ALLOCATABLE :: lambdas(:)
@@ -64,6 +67,12 @@ PROGRAM MAIN
   END DO
   CLOSE(333)
 
-  
+
+  !MPS? MAYBE!
+  print*, "launching mps"
+  CALL MPS(my_tens,tens_lista,eps=1D-2)  ! roughly half the parameters for 1% error
+  print*, "Total cores size:", SIZE(tens_lista(1)%cores%elems)+SIZE(tens_lista(2)%cores%elems)+SIZE(tens_lista(3)%cores%elems)
+  print*, "Original size:", SIZE(my_tens%elems)
+
 END PROGRAM MAIN
   

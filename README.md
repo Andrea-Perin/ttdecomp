@@ -1,3 +1,6 @@
 # ttdecomp
 
-**ttdecomp** is a FORTRAN package for manipulating multidimensional tensors, up to order 7, and performing basic decompositions.
+**ttdecomp** is a FORTRAN package for manipulating multidimensional tensors, and performing basic decompositions. Implemented algorithms are:
+* CPD
+* Tucker decomposition (via HOSVD and HOOI)
+* MPS (still under construction)
