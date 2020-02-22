@@ -28,7 +28,52 @@ MODULE MPS_MOD
   
 CONTAINS
 
+  ! ====================================
+  ! ====================================
+  ! MPS REPRESENTATION TO TENSOR
+  ! ====================================
+  ! ====================================
 
+  FUNCTION MPS_TO_TENSOR3(GG)
+    ! INOUT VARIABLES
+    TYPE(TENSOR_LIST) :: GG(3)
+    TYPE(DTENSOR3) :: MPS_TO_TENSOR3
+    ! UTILITY VARIABLES
+    REAL*8, ALLOCATABLE :: MPS_TO_TENS(:,:)
+    INTEGER*4 :: ii, order=SIZE(GG), prev_rank, next_rank
+    INTEGER*4 :: og_ranks(SIZE(GG))
+    REAL*8, ALLOCATABLE :: current_factor(:,:)
+    
+    ! CHECK IF THE NUMBER OF FACTORS IS TOO LARGE
+    IF (order.NE.3) THEN
+       WRITE(*,*) "WARNING (MPS_TO_TENSOR3): only 3 factors are allowed."
+    END IF
+    ! STORE THE SHAPE OF THE RESULTING TENSOR
+    og_ranks = (/ (GG(ii)%cores%modes(2),ii=1,order,1) /)
+    ! ALLOCATE MPS_TO_TENS
+    ALLOCATE( MPS_TO_TENS(og_ranks(1), SIZE(GG(1)%cores%elems)/og_ranks(1) ) )
+    ! UPDATE, LOOPING OVER FACTORS
+    DO ii=2,order
+       ! STORE THE RANKS OF THE CURRENT FACTOR
+       prev_rank = GG(ii)%cores%modes(1) 
+       next_rank = GG(ii)%cores%modes(3)
+       ! ALLOCATE THE CURRENT FACTOR
+       ALLOCATE( current_factor(prev_rank, SIZE(GG(ii)%cores%elems)/prev_rank) )
+       current_factor = GG(ii)%cores.MODE.1
+       ! UPDATE MPS_TO_TENS
+       ! print*, "Shape of current factor matrix", SHAPE(current_factor)
+       ! print*, "Shape of MPS in matrix form", SHAPE(MPS_TO_TENS)
+       MPS_TO_TENS = MTML(MPS_TO_TENS,current_factor)
+       DEALLOCATE(current_factor)
+       MPS_TO_TENS = RESHAPE(MPS_TO_TENS, (/ SIZE(MPS_TO_TENS)/next_rank, next_rank /) )
+    END DO
+    ! STORE EVERYTHING IN A TENSOR
+    MPS_TO_TENSOR3%modes = og_ranks
+    MPS_TO_TENSOR3%elems = RESHAPE( SPREAD(MPS_TO_TENS, 3, 1), og_ranks )
+  END FUNCTION MPS_TO_TENSOR3
+    
+
+  
   ! ====================================
   ! ====================================
   ! 2->3 RESHAPE
@@ -112,7 +157,7 @@ CONTAINS
        Ctmp = TRANSPOSE(MTDG(TRANSPOSE(VVT),SIG))
     END DO
     ! SAVE THE LAST CORE
-    coreshape = (/ ranks(dd), tensor%modes(dd), ranks(dd+1) /)
+    coreshape = (/ ranks(dd-1), tensor%modes(dd), ranks(dd) /)
     GG(kk)%cores = HYPERSHAPE(Ctmp, coreshape)
   END SUBROUTINE MPS3
 

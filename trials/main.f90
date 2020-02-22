@@ -70,5 +70,26 @@ PROGRAM MAIN
   CALL MPS(my_tens,tens_lista,eps=1D-2)  ! roughly half the parameters for 1% error
   print*, "Total cores size:", SIZE(tens_lista(1)%cores%elems)+SIZE(tens_lista(2)%cores%elems)+SIZE(tens_lista(3)%cores%elems)
   print*, "Original size:", SIZE(my_tens%elems)
+
+  print*, "Shape of core 1:", tens_lista(1)%cores%modes 
+  print*, "Shape of core 2:", tens_lista(2)%cores%modes
+  print*, "Shape of core 3:", tens_lista(3)%cores%modes
+  
+  approx = MPS_TO_TENSOR3(tens_lista)
+  print*, "Approx size:", SIZE(approx%elems)
+  print*, "True size:", PRODUCT(my_tens%modes)
+
+  print*, SQRT(SUM((my_tens%elems-approx%elems)**2))/SIZE(approx%elems)
+
+  !SAVE ON FILE
+  OPEN(333,file='../data/land_112_240_MPS.csv',status="unknown",action="write")
+  DO ii=1,SIZE(approx%elems, 1)
+    WRITE(333,*) approx%elems(ii,:,:) 
+  END DO
+  CLOSE(333)
+
+
+
+  
 END PROGRAM MAIN
   
