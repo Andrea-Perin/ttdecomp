@@ -52,6 +52,7 @@ CONTAINS
     og_ranks = (/ (GG(ii)%cores%modes(2),ii=1,order,1) /)
     ! ALLOCATE MPS_TO_TENS
     ALLOCATE( MPS_TO_TENS(og_ranks(1), SIZE(GG(1)%cores%elems)/og_ranks(1) ) )
+    MPS_TO_TENS = GG(1)%cores.MODE.2
     ! UPDATE, LOOPING OVER FACTORS
     DO ii=2,order
        ! STORE THE RANKS OF THE CURRENT FACTOR

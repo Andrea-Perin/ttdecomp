@@ -15,17 +15,49 @@ PROGRAM MAIN
   REAL*8,ALLOCATABLE::IN(:,:)
   INTEGER,ALLOCATABLE::ranks(:)
   INTEGER::nn,rows,cols,kk,ii
-  TYPE(DTENSOR3)::my_tens,copy,approx,core
-  !JUST TO TRY...
+  ! FOR VIDEO
+  TYPE(DTENSOR4):: video, approx_video, core_video
+  ! FOR LANDSCAPE
+  TYPE(DTENSOR3) :: landscape, approx_landscape, core_landscape
+  ! FOR MNIST
+  TYPE(DTENSOR3) :: MNIST, approx_MNIST, core_MNIST
+  ! OTHER
   TYPE(matrix_list) :: lista(3)
   TYPE(tensor_list) :: tens_lista(3)
   
   INTEGER*4 :: rango
   REAL*8 :: threshold, error
   REAL*8, ALLOCATABLE :: lambdas(:)
-  !OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
-  OPEN(332,file='../data/land_112_240.csv',status="old",action="read")
-  !OPEN(332,file='../data/original_144p.csv',status="old",action="read")
+
+  INTEGER*4 :: choose_file
+
+
+  !======================================
+  ! CHOOSE FILE
+  ! - 1    : MNIST
+  ! - 2    : landscape
+  ! - 3    : video
+  !======================================
+  choose_file = 2
+
+  
+  !======================================
+  ! SELECT FILE
+  !======================================  
+  IF (choose_file.EQ.1) THEN
+     ! MNIST 1K (3D TENSOR)
+     OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
+  ELSEIF (choose_file.EQ.2) THEN
+     ! LANDSCAPE IMAGE (3D TENSOR)
+     OPEN(332,file='../data/land_112_240.csv',status="old",action="read")
+  ELSEIF (choose_file.EQ.3) THEN
+     ! SHORT VIDEO (4D TENSOR)
+     OPEN(332,file='../data/original_144p.csv',status="old",action="read")
+  END IF
+     
+  !======================================
+  ! READ FILE
+  !======================================
   READ (332, *) nn
   ALLOCATE(dimm(nn))
   READ(332,*) dimm
@@ -38,7 +70,21 @@ PROGRAM MAIN
   READ(332,*) IN
   IN=TRANSPOSE(IN)
   CLOSE(332)
-  my_tens=TENSOR3(dimm,IN,1) ! assuming mode 1
+
+  !======================================
+  ! STORE IN THE APPROPRIATE TENSOR 
+  !======================================
+  IF (choose_file.EQ.1) THEN
+     MNIST = TENSOR3(dimm,IN,1) ! assuming mode 1
+  ELSEIF (choose_file.EQ.2) THEN
+     landscape = TENSOR3(dimm,IN,1) ! assuming mode 1
+  ELSEIF (choose_file.EQ.3) THEN
+     video = TENSOR4(dimm,IN,1) ! assuming mode 1
+  END IF
+  
+  !======================================
+  ! COMPRESS
+  !======================================
 
   ! !TUCKER DECOMPOSITION
   ! ALLOCATE(ranks(4))
@@ -67,27 +113,22 @@ PROGRAM MAIN
   ! END DO
   ! CLOSE(333)
 
-
-  !MPS? MAYBE!
-  print*, "launching mps"
-  CALL MPS(my_tens,tens_lista,eps=1D-2)  ! roughly half the parameters for 1% error
-  print*, "Total cores size:", SIZE(tens_lista(1)%cores%elems)+SIZE(tens_lista(2)%cores%elems)+SIZE(tens_lista(3)%cores%elems)
-  print*, "Original size:", SIZE(my_tens%elems)
-
+  !MPS DECOMPOSITION 
+  CALL MPS(landscape,tens_lista,eps=1D-2)  ! roughly half the parameters for 1% error
+  ! sizes match the theory (at least)
   print*, "Shape of core 1:", tens_lista(1)%cores%modes 
   print*, "Shape of core 2:", tens_lista(2)%cores%modes
   print*, "Shape of core 3:", tens_lista(3)%cores%modes
-  
-  approx = MPS_TO_TENSOR3(tens_lista)
-  print*, "Approx size:", SIZE(approx%elems)
-  print*, "True size:", PRODUCT(my_tens%modes)
-
-  print*, SQRT(SUM((my_tens%elems-approx%elems)**2))/SIZE(approx%elems)
-
+  ! try reconstruction
+  approx_landscape = MPS_TO_TENSOR3(tens_lista)
+  print*, "Approx size:", SIZE(approx_landscape%elems)
+  print*, "True size:", PRODUCT(landscape%modes)
+  ! show error
+  print*, SQRT(SUM((landscape%elems-approx_landscape%elems)**2))/SQRT(SUM(approx_landscape%elems**2))
   !SAVE ON FILE
   OPEN(333,file='../data/land_112_240_MPS.csv',status="unknown",action="write")
-  DO ii=1,SIZE(approx%elems, 1)
-    WRITE(333,*) approx%elems(ii,:,:) 
+  DO ii=1,SIZE(approx_landscape%elems, 1)
+    WRITE(333,*) approx_landscape%elems(ii,:,:) 
   END DO
   CLOSE(333)
 
