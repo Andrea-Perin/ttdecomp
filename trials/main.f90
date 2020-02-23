@@ -49,7 +49,7 @@ PROGRAM MAIN
      OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
   ELSEIF (choose_file.EQ.2) THEN
      ! LANDSCAPE IMAGE (3D TENSOR)
-     OPEN(332,file='../data/land_112_240.csv',status="old",action="read")
+     OPEN(332,file='../data/land_149_320.csv',status="old",action="read")
   ELSEIF (choose_file.EQ.3) THEN
      ! SHORT VIDEO (4D TENSOR)
      OPEN(332,file='../data/original_144p.csv',status="old",action="read")
@@ -114,23 +114,22 @@ PROGRAM MAIN
   ! CLOSE(333)
 
   !MPS DECOMPOSITION 
-  CALL MPS(landscape,tens_lista,eps=1D-2)  ! roughly half the parameters for 1% error
+  CALL MPS(landscape,tens_lista,eps=5D-2)  ! roughly half the parameters for 1% error
   ! sizes match the theory (at least)
   print*, "Shape of core 1:", tens_lista(1)%cores%modes 
   print*, "Shape of core 2:", tens_lista(2)%cores%modes
   print*, "Shape of core 3:", tens_lista(3)%cores%modes
   ! try reconstruction
   approx_landscape = MPS_TO_TENSOR3(tens_lista)
-  print*, "Approx size:", SIZE(approx_landscape%elems)
-  print*, "True size:", PRODUCT(landscape%modes)
+  !print*, "Approx size:", SIZE(approx_landscape%elems)
+  !print*, "True size:", PRODUCT(landscape%modes)
   ! show error
-  print*, SQRT(SUM((landscape%elems-approx_landscape%elems)**2))/SQRT(SUM(approx_landscape%elems**2))
+  !print*, SQRT(SUM((landscape%elems-approx_landscape%elems)**2))/SQRT(SUM(approx_landscape%elems**2))
   !SAVE ON FILE
-  OPEN(333,file='../data/land_112_240_MPS.csv',status="unknown",action="write")
+  OPEN(333,file='../data/land_149_320_MPS_eps_5.csv',status="unknown",action="write")
   DO ii=1,SIZE(approx_landscape%elems, 1)
     WRITE(333,*) approx_landscape%elems(ii,:,:) 
   END DO
   CLOSE(333)
 
 END PROGRAM MAIN
-  
