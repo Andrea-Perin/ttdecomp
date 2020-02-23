@@ -14,7 +14,7 @@ PROGRAM MAIN
   INTEGER,ALLOCATABLE::dimm(:)
   REAL*8,ALLOCATABLE::IN(:,:)
   INTEGER,ALLOCATABLE::ranks(:)
-  INTEGER::nn,rows,cols,kk,ii
+  INTEGER::nn,rows,cols,ii
   ! FOR VIDEO
   TYPE(DTENSOR4):: video, approx_video, core_video
   ! FOR LANDSCAPE
@@ -22,14 +22,17 @@ PROGRAM MAIN
   ! FOR MNIST
   TYPE(DTENSOR3) :: MNIST, approx_MNIST, core_MNIST
   ! OTHER
-  TYPE(matrix_list) :: lista(3)
-  TYPE(tensor_list) :: tens_lista(3)
+  TYPE(matrix_list),ALLOCATABLE :: lista(:)
+  TYPE(tensor_list),ALLOCATABLE :: tens_lista(:)
   
   INTEGER*4 :: rango
   REAL*8 :: threshold, error
   REAL*8, ALLOCATABLE :: lambdas(:)
 
-  INTEGER*4 :: choose_file
+  CHARACTER(LEN=64)::in_file,out_file
+  INTEGER*4 :: choose_file, choose_method
+  INTEGER*4 :: num_images, x_pixels, y_pixels
+  
 
 
   !======================================
@@ -40,20 +43,33 @@ PROGRAM MAIN
   !======================================
   choose_file = 2
 
+
+  !======================================
+  ! CHOOSE FILE RESOLUTION
+  ! - num_images  : images in MNIST
+  ! - x_pixels    : x pixels of landscape
+  ! - Y_pixels    : y pixels of landscape
+  !======================================
+  num_images = 1000
+  x_pixels = 112
+  y_pixels = 240
+  
   
   !======================================
   ! SELECT FILE
   !======================================  
   IF (choose_file.EQ.1) THEN
      ! MNIST 1K (3D TENSOR)
-     OPEN(332,file='../data/mnist_1k.csv',status="old",action="read")
+     WRITE (in_file,"(A14,I0,A4)") "../data/mnist_",num_images,".csv"
   ELSEIF (choose_file.EQ.2) THEN
      ! LANDSCAPE IMAGE (3D TENSOR)
-     OPEN(332,file='../data/land_149_320.csv',status="old",action="read")
+     WRITE (in_file,"(A13,I0,A1,IO,A4)") "../data/land_",x_pixels,"_",y_pixels,".csv"
   ELSEIF (choose_file.EQ.3) THEN
      ! SHORT VIDEO (4D TENSOR)
-     OPEN(332,file='../data/original_144p.csv',status="old",action="read")
+     WRITE (in_file,"(A25)") "../data/original_144p.csv"
   END IF
+
+  OPEN(332,file=in_file,status="old",action="read")
      
   !======================================
   ! READ FILE
@@ -63,8 +79,8 @@ PROGRAM MAIN
   READ(332,*) dimm
   rows=dimm(1)
   cols=1
-  DO kk=2,nn
-     cols=cols*dimm(kk)
+  DO ii=2,nn
+     cols=cols*dimm(ii)
   END DO
   ALLOCATE(IN(cols,rows))
   READ(332,*) IN
@@ -76,15 +92,66 @@ PROGRAM MAIN
   !======================================
   IF (choose_file.EQ.1) THEN
      MNIST = TENSOR3(dimm,IN,1) ! assuming mode 1
+     ALLOCATE(lista(3))
+     ALLOCATE(tens_lista(3))
   ELSEIF (choose_file.EQ.2) THEN
+     ALLOCATE(lista(3))
+     ALLOCATE(tens_lista(3))
      landscape = TENSOR3(dimm,IN,1) ! assuming mode 1
   ELSEIF (choose_file.EQ.3) THEN
+     ALLOCATE(lista(4))
+     ALLOCATE(tens_lista(4))
      video = TENSOR4(dimm,IN,1) ! assuming mode 1
   END IF
+
+  !======================================
+  ! CHOOSE METHOD
+  ! - 4    : MPS 
+  ! - 5    : CP
+  ! - 6    : TUCKER
+  !======================================
+  choose_method = 5
+  
   
   !======================================
-  ! COMPRESS
+  ! COMPRESS RECONSTRUCT AND SAVE FILE
   !======================================
+
+
+  ! IF (choose_method.EQ.4) THEN
+  !    !MPS DECOMPOSITION
+  !    IF (choose_file.EQ.1) THEN
+  !       CALL MPS(MNIST,tens_lista,eps=5D-2)
+  !    ELSEIF (choose_file.EQ.2) THEN
+  !       CALL MPS(landscape,tens_lista,eps=5D-2)
+  !    ELSEIF (choose_file.EQ.3) THEN
+  !       CALL MPS(video,tens_lista,eps=5D-2)
+  !    END IF
+  !    DO ii=1,SIZE(tens_lista)
+  !       print*, "Shape of core :",ii, tens_lista(ii)%cores%modes 
+  !    END DO
+  !    IF (choose_file.EQ.1) THEN
+  !       approx_MNIST = MPS_TO_TENSOR3(tens_lista)
+  !       WRITE (out_file,"(A4,I0,A4)") "../data/mnist_",N,".csv"
+  !    ELSEIF (choose_file.EQ.2) THEN
+  !       approx_landscape = MPS_TO_TENSOR3(tens_lista)
+  !    ELSEIF (choose_file.EQ.3) THEN
+  !       approx_video = MPS_TO_TENSOR4(tens_lista)
+  !    END IF
+     
+  !    !SAVE ON FILE
+  !    OPEN(333,file='../data/land_149_320_MPS_eps_5.csv',status="unknown",action="write")
+  !    DO ii=1,SIZE(approx_landscape%elems, 1)
+  !       WRITE(333,*) approx_landscape%elems(ii,:,:) 
+  !    END DO
+  !    CLOSE(333)
+     
+
+  ! ELSEIF (choose_method.EQ.5) THEN
+  !    landscape = TENSOR3(dimm,IN,1) ! assuming mode 1
+  ! ELSEIF (choose_method.EQ.6) THEN
+  !    video = TENSOR4(dimm,IN,1) ! assuming mode 1
+  ! END IF
 
   ! !TUCKER DECOMPOSITION
   ! ALLOCATE(ranks(4))
@@ -120,7 +187,7 @@ PROGRAM MAIN
   print*, "Shape of core 2:", tens_lista(2)%cores%modes
   print*, "Shape of core 3:", tens_lista(3)%cores%modes
   ! try reconstruction
-  approx_landscape = MPS_TO_TENSOR3(tens_lista)
+  approx_landscape = MPS_TO_TENSOR4(tens_lista)
   !print*, "Approx size:", SIZE(approx_landscape%elems)
   !print*, "True size:", PRODUCT(landscape%modes)
   ! show error
