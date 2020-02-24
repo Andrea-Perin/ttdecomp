@@ -30,6 +30,7 @@ PROGRAM MAIN
   CHARACTER(LEN=64) :: in_file,out_file
   INTEGER*4 :: choose_file, choose_method
   INTEGER*4 :: num_images, x_pixels, y_pixels
+  REAL*8 :: epsilon
   INTEGER*4 :: rango
   INTEGER*4,ALLOCATABLE :: ranks(:)
   
@@ -41,7 +42,10 @@ PROGRAM MAIN
   ! - 2    : landscape
   ! - 3    : video
   !============================================
-  choose_file = 2
+  !choose_file = 2
+  OPEN (126,file="choose_file.dat",status="old",action="read")
+  READ (126, *) choose_file
+  CLOSE(126)
 
 
   !============================================
@@ -50,9 +54,18 @@ PROGRAM MAIN
   ! - x_pixels    : x pixels of landscape
   ! - Y_pixels    : y pixels of landscape
   !============================================
-  num_images = 1000 ! 100, 250, 500, 1000
-  x_pixels = 149    ! 112, 149, 298, 478
-  y_pixels = 320    ! 240, 320, 640, 1024
+  !num_images = 100 ! 100, 250, 500, 1000
+  !x_pixels = 112    ! 112, 149, 298, 478
+  !y_pixels = 240    ! 240, 320, 640, 1024
+  OPEN (127,file="file_resolution.dat",status="old",action="read")
+  IF (choose_file.EQ.1) THEN
+     ! MNIST (3D TENSOR)
+     READ (127, *) num_images
+  ELSEIF (choose_file.EQ.2) THEN
+     ! LANDSCAPE IMAGE (3D TENSOR)
+     READ (127, *) x_pixels, y_pixels
+  END IF
+  CLOSE(127)
 
 
   !============================================
@@ -63,22 +76,36 @@ PROGRAM MAIN
   ! - 7    : HOOI  TUCKER
   ! - 8    : HOOI  TUCKER RANDOM INITIALIZATION
   !============================================
-  choose_method = 5
-  
+  !choose_method = 4
+  OPEN (128,file="choose_method.dat",status="old",action="read")
+  READ (128, *) choose_method
+  CLOSE(128)
 
   !============================================
   ! CHOOSE DECOMPOSITION PARAMETERS
+  ! - epsilon     : tensor train epsilon
   ! - rango       : cpd rank
   ! - ranks(:)    : tucker ranks
-  !============================================
-  rango = 16
-  IF ((choose_file.EQ.1).OR.(choose_file.EQ.2)) THEN
-     ALLOCATE(ranks(3))
-     ranks = (/ 10,20,3 /)
-  ELSEIF (choose_file.EQ.3) THEN
-     ALLOCATE(ranks(4))
-     ranks = (/ 64,64,64,3 /)
+  !============================================ 
+  OPEN (129,file="decomposition_parameters.dat",status="old",action="read")
+  IF (choose_method.EQ.4) THEN
+     READ (129, *) epsilon
+     !epsilon = 5D-2
+  ELSEIF (choose_method.EQ.4) THEN
+     READ (129, *) rango
+     !rango = 16
+  ELSEIF ((choose_method.GE.6).AND.(choose_method.LE.8)) THEN
+     IF ((choose_file.EQ.1).OR.(choose_file.EQ.2)) THEN
+        ALLOCATE(ranks(3))
+        READ (129, *) ranks(:)
+        !ranks = (/ 10,3,3 /)
+     ELSEIF (choose_file.EQ.3) THEN
+        ALLOCATE(ranks(4))
+        READ (129, *) ranks(:)
+        !ranks = (/ 64,64,64,3 /)
+     END IF
   END IF
+  CLOSE(129)
   
   
   !============================================
@@ -92,7 +119,7 @@ PROGRAM MAIN
      WRITE (in_file,"(A13,I0,A1,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,".csv"
   ELSEIF (choose_file.EQ.3) THEN
      ! SHORT VIDEO (4D TENSOR)
-     WRITE (in_file,"(A25)") "../data/video_144p.csv"
+     WRITE (in_file,"(A22)") "../data/video_144p.csv"
   END IF
   
      
@@ -143,29 +170,32 @@ PROGRAM MAIN
      ! MPS DECOMPOSITION
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
-        CALL MPS(MNIST,tens_lista,eps=5D-2)
+        CALL MPS(MNIST,tens_lista,eps=epsilon)
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
-        CALL MPS(land,tens_lista,eps=5D-2)
+        CALL MPS(land,tens_lista,eps=epsilon)
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
-        CALL MPS(video,tens_lista,eps=5D-2)
+        CALL MPS(video,tens_lista,eps=epsilon)
      END IF
-     DO ii=1,SIZE(tens_lista)
-        print*, "Shape of core :",ii, tens_lista(ii)%cores%modes 
-     END DO
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
         approx_MNIST = MPS_TO_TENSOR3(tens_lista)
-        WRITE (out_file,"(A14,I0,A8)") "../data/mnist_",num_images,"_MPS.csv"
+        WRITE (out_file,"(A14,I0,A5,I0,A1,I0,A1,I0,A1,I0,A4)") &
+             "../data/mnist_",num_images,"_MPS_",tens_lista(1)%cores%modes(1),"_",tens_lista(2)%cores%modes(1),&
+             "_",tens_lista(3)%cores%modes(1),"_",tens_lista(3)%cores%modes(3),".csv"
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
         approx_land = MPS_TO_TENSOR3(tens_lista)
-        WRITE (out_file,"(A13,I0,A1,I0,A8)") "../data/land_",x_pixels,"_",y_pixels,"_MPS.csv"
+        WRITE (out_file,"(A13,I0,A1,I0,A5,I0,A1,I0,A1,I0,A1,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,"_MPS_",&
+             tens_lista(1)%cores%modes(1),"_",tens_lista(2)%cores%modes(1),"_",tens_lista(3)%cores%modes(1),&
+             "_",tens_lista(3)%cores%modes(3),".csv"
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
         approx_video = MPS_TO_TENSOR4(tens_lista)
-        WRITE (out_file,"(A26)") "../data/video_114p_MPS.csv"
+        WRITE (out_file,"(A23,I0,A1,I0,A1,I0,A1,I0,A1,I0,A4)") "../data/video_144p_MPS_",tens_lista(1)%cores%modes(1),&
+             "_",tens_lista(2)%cores%modes(1),"_",tens_lista(3)%cores%modes(1),"_",tens_lista(4)%cores%modes(1),&
+             "_",tens_lista(4)%cores%modes(3),".csv"
      END IF
   ELSEIF (choose_method.EQ.5) THEN
      ! CP DECOMPOSITION
@@ -187,7 +217,7 @@ PROGRAM MAIN
         CALL CPD(video,rango,lista,lambdas,error,numiter=2)
         core_video = TENSOR4((/rango,rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(video%modes)),1)
         approx_video = RECO(core_video,lista)
-        WRITE (out_file,"(A23,I0,A4)") "../data/video_114p_cpd_",rango,".csv"
+        WRITE (out_file,"(A23,I0,A4)") "../data/video_144p_cpd_",rango,".csv"
      END IF
   ELSEIF (choose_method.EQ.6) THEN
      ! HOSVD TUCKER DECOMPOSITION
@@ -208,7 +238,7 @@ PROGRAM MAIN
         CALL HOSVD(video,ranks,core_video,lista)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A25,I0,A1,I0,A1,I0,A4)") &
-             "../data/video_114p_hosvd_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
+             "../data/video_144p_hosvd_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
      END IF
   ELSEIF (choose_method.EQ.7) THEN
      ! HOOI TUCKER DECOMPOSITION
@@ -229,7 +259,7 @@ PROGRAM MAIN
         CALL HOOI(video,ranks,core_video,lista,error)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A24,I0,A1,I0,A1,I0,A4)") &
-             "../data/video_114p_hooi_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
+             "../data/video_144p_hooi_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
      END IF
   ELSEIF (choose_method.EQ.8) THEN
      ! HOOI TUCKER DECOMPOSITION
@@ -250,7 +280,7 @@ PROGRAM MAIN
         CALL HOOI(video,ranks,core_video,lista,error,randinit=.TRUE.)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A26,I0,A1,I0,A1,I0,A4)") &
-             "../data/video_114p_random_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
+             "../data/video_144p_random_",ranks(1),"_",ranks(2),"_",ranks(3),".csv"
      END IF
   END IF
 
