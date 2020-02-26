@@ -11,7 +11,7 @@ MODULE MAT_UTILS
   !- MOORE-PENROSE INVERSE
   !- MATRIX-DIAGONAL VECTOR MUTIPLICATION
   !- COLUMN-NORMALIZATION
-
+  !- COLUMNWISE ORTHOGONALITY CHECK 
   
   IMPLICIT NONE
   REAL*8, PARAMETER :: pi=ACOS(-1d0)
@@ -538,11 +538,36 @@ CONTAINS
 
 
 
+  FUNCTION COLWISE_ORTH(matrix, eps)
+    ! ===========================================================================
+    ! Checks whether the given matrix is columnwise orthogonal.
+    ! INPUT ARGUMENTS
+    ! - matrix        : (REAL*8) the input matrix
+    ! - eps           : (REAL*8, OPTIONAL) the wanted tolerance
+    ! OUTPUT ARGUMENTS
+    ! - COLWISE_ORTH  : (LOGICAL) the result of the check 
+    ! ===========================================================================
+    ! INOUT VARIABLES
+    REAL*8 :: matrix(:,:)
+    REAL*8, OPTIONAL :: eps
+    LOGICAL :: COLWISE_ORTH 
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii, jj
+    REAL*8 :: tol=1D-5
 
-
-
-
-
+    IF (PRESENT(eps).AND.(eps.GT.EPSILON(1D0))) THEN
+       tol = eps
+    END IF
+    COLWISE_ORTH=.TRUE.
+    DO ii=1,SIZE(matrix,2)
+       DO jj=ii+1,SIZE(matrix,2)
+          IF ( ABS(DOT_PRODUCT(matrix(:,ii),matrix(:,jj))).GT.tol ) THEN
+             COLWISE_ORTH=.FALSE.
+          END IF
+       END DO
+    END DO
+    RETURN
+  END FUNCTION COLWISE_ORTH
 
   
 END MODULE MAT_UTILS
