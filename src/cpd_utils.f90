@@ -335,7 +335,7 @@ CONTAINS
     ! - tens_rec stores the reconstruction, and has always the same shape
     ALLOCATE(V(rank,rank))
     ALLOCATE(B(PRODUCT(tensor%modes(2:)),rank))
-    ALLOCATE(B(PRODUCT(tensor%modes(2:)),rank))
+    ALLOCATE(B_rec(PRODUCT(tensor%modes(2:)),rank))
     ALLOCATE(tens_rec(tensor%modes(1), PRODUCT(tensor%modes(2:))))
     ! entry condition: relative error and number of iterations
     DO WHILE ((rel_err.GT.tol).AND.(cnt.LT.maxiter))
@@ -364,10 +364,10 @@ CONTAINS
        END DO
        ! now, compute the error on the reconstruction
        ! first, compute the transposed cumulative khatri rao
-       B = RESHAPE(B, (/tensor%modes(3)*tensor%modes(2),rank/) )
-       B = factors(3)%matr.KHRAO.factors(2)%matr
+       B_rec = RESHAPE(B_rec, (/tensor%modes(3)*tensor%modes(2),rank/) )
+       B_rec = factors(3)%matr.KHRAO.factors(2)%matr
        DO ii=4,NN
-          B = factors(ii)%matr.KHRAO.B
+          B_rec = factors(ii)%matr.KHRAO.B_rec
        END DO
        ! then combine everything 
        tens_rec = MTML( factors(1)%matr.MDDOT.lambdas, TRANSPOSE(B))
