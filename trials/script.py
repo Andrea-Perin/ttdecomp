@@ -2,8 +2,8 @@ import subprocess as sub
 import numpy as np
 cf_l  = [2] #[1,2,3]
 cff_l = ["land_"] #["MNIST_","land_","video_"]
-cm_l  = [4,5,6,7] #[4,5,6,7,8]
-cmm_l = ["_mps","_cpd","_hosvd","_hooi"] #["_mps","_cpd","_hosvd","_hooi","_random"]
+cm_l  = [5] #[4,5,6,7,8]
+cmm_l = ["_cpd"] #["_mps","_cpd","_hosvd","_hooi","_random"]
 for (cf,cff) in zip(cf_l,cff_l): # SELECT DATASET
     if (cf==1):
         fr_l = [[100]] #[[100],[250],[500],[1000]]
@@ -22,7 +22,7 @@ for (cf,cff) in zip(cf_l,cff_l): # SELECT DATASET
             if (6 <= cm <= 8):
                 dp_l = [[np.floor(fr[0]*0.655*i).astype('i8'),np.floor(fr[1]*0.655*i).astype('i8'),3] for i in np.arange(0.1,1.1,0.1)]
             elif (cm == 5):
-                dp_l = [[np.floor(i*np.prod(fr)/np.sum(fr)).astype('i8')] for i in np.arange(0.01,1.11,0.1)]
+                dp_l = [[2]] #[[np.floor(i*np.prod(fr)/np.sum(fr)).astype('i8')] for i in np.arange(0.01,1.11,0.1)]
             elif (cm == 4):
                 dp_l  = [["1D-1"],["5D-2"],["3D-2"],["2D-2"],["1D-2"],["5D-3"],["3D-3"],["2D-3"],["1D-3"]]
             for dp in dp_l:

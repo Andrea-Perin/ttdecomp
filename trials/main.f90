@@ -90,19 +90,15 @@ PROGRAM MAIN
   OPEN (129,file="decomposition_parameters.dat",status="old",action="read")
   IF (choose_method.EQ.4) THEN
      READ (129, *) epsilon
-     !epsilon = 5D-2
-  ELSEIF (choose_method.EQ.4) THEN
+  ELSEIF (choose_method.EQ.5) THEN
      READ (129, *) rango
-     !rango = 16
   ELSEIF ((choose_method.GE.6).AND.(choose_method.LE.8)) THEN
      IF ((choose_file.EQ.1).OR.(choose_file.EQ.2)) THEN
         ALLOCATE(ranks(3))
         READ (129, *) ranks(:)
-        !ranks = (/ 10,3,3 /)
      ELSEIF (choose_file.EQ.3) THEN
         ALLOCATE(ranks(4))
         READ (129, *) ranks(:)
-        !ranks = (/ 64,64,64,3 /)
      END IF
   END IF
   CLOSE(129)
@@ -200,7 +196,6 @@ PROGRAM MAIN
      CLOSE(130)
   ELSEIF (choose_method.EQ.5) THEN
      ! CP DECOMPOSITION
-     rango=16
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
         CALL CPD(MNIST,rango,lista,lambdas,error)
@@ -288,24 +283,24 @@ PROGRAM MAIN
   !============================================
   ! SAVE DATA ON FILE
   !============================================
-  ! OPEN(333,file=out_file,status="unknown",action="write")
-  ! IF (choose_file.EQ.1) THEN
-  !    ! MNIST (3D TENSOR)
-  !    DO ii=1,SIZE(approx_MNIST%elems, 1)
-  !       WRITE(333,*) approx_MNIST%elems(ii,:,:) 
-  !    END DO
-  ! ELSEIF (choose_file.EQ.2) THEN
-  !    ! LANDSCAPE IMAGE (3D TENSOR)
-  !    DO ii=1,SIZE(approx_land%elems, 1)
-  !       WRITE(333,*) approx_land%elems(ii,:,:) 
-  !    END DO
-  ! ELSEIF (choose_file.EQ.3) THEN
-  !    ! SHORT VIDEO (4D TENSOR)
-  !    DO ii=1,SIZE(approx_video%elems, 1)
-  !       WRITE(333,*) approx_video%elems(ii,:,:,:) 
-  !    END DO
-  ! END IF
-  ! CLOSE(333)
+  OPEN(333,file=out_file,status="unknown",action="write")
+  IF (choose_file.EQ.1) THEN
+     ! MNIST (3D TENSOR)
+     DO ii=1,SIZE(approx_MNIST%elems, 1)
+        WRITE(333,*) approx_MNIST%elems(ii,:,:) 
+     END DO
+  ELSEIF (choose_file.EQ.2) THEN
+     ! LANDSCAPE IMAGE (3D TENSOR)
+     DO ii=1,SIZE(approx_land%elems, 1)
+        WRITE(333,*) approx_land%elems(ii,:,:) 
+     END DO
+  ELSEIF (choose_file.EQ.3) THEN
+     ! SHORT VIDEO (4D TENSOR)
+     DO ii=1,SIZE(approx_video%elems, 1)
+        WRITE(333,*) approx_video%elems(ii,:,:,:) 
+     END DO
+  END IF
+  CLOSE(333)
 
   !============================================
   ! SAVE ERROR ON FILE
@@ -322,5 +317,5 @@ PROGRAM MAIN
      WRITE(334,*) SQRT(SUM((video%elems-approx_video%elems)**2))/SIZE(video%elems)
   END IF
   CLOSE(334)
-
+  
 END PROGRAM MAIN
