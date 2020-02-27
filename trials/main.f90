@@ -198,19 +198,19 @@ PROGRAM MAIN
      ! CP DECOMPOSITION
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
-        CALL CPD(MNIST,rango,lista,lambdas,error,numiter=100)
+        CALL CPD(MNIST,rango,lista,lambdas,error)
         core_MNIST = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(MNIST%modes)),1)
         approx_MNIST = RECO(core_MNIST,lista)
         WRITE (out_file,"(A14,I0,A5,I0,A4)") "../data/mnist_",num_images,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
-        CALL NEWCPD3(land,rango,lista,lambdas,error,numiter=500)
+        CALL CPD(land,rango,lista,lambdas,error)
         core_land = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(land%modes)),1)
         approx_land = RECO(core_land,lista)
         WRITE (out_file,"(A13,I0,A1,I0,A5,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
-        CALL CPD(video,rango,lista,lambdas,error,numiter=100)
+        CALL CPD(video,rango,lista,lambdas,error)
         core_video = TENSOR4((/rango,rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(video%modes)),1)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A23,I0,A4)") "../data/video_144p_cpd_",rango,".csv"
