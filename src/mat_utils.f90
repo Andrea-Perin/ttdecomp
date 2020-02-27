@@ -17,7 +17,7 @@ MODULE MAT_UTILS
   REAL*8, PARAMETER :: pi=ACOS(-1d0)
 
   
-! INTERFACES FOR COMMON BINARY OPERATORS
+  ! INTERFACES FOR COMMON BINARY OPERATORS
   INTERFACE OPERATOR (.KRON.)
      MODULE PROCEDURE S_KRON, D_KRON, SVEC_KRON, DVEC_KRON
   END INTERFACE OPERATOR (.KRON.)
@@ -30,6 +30,12 @@ MODULE MAT_UTILS
      MODULE PROCEDURE S_HADAMARD, D_HADAMARD
   END INTERFACE OPERATOR (.HAD.)
 
+  ! INTERFACE FOR DIAGONAL TIMES MATRIX (BOTH WAYS)
+  INTERFACE OPERATOR (.MDDOT.)
+     MODULE PROCEDURE MTDG
+     MODULE PROCEDURE DGMT
+  END INTERFACE OPERATOR (.MDDOT.)
+  
   INTERFACE SHOW
      MODULE PROCEDURE SHOW_M
      MODULE PROCEDURE SHOW_V
@@ -489,7 +495,7 @@ CONTAINS
   FUNCTION MTDG(matrix,diagonal)
 !!$===========================================================================
 !!$    This function computes the product of a matrix and a diagonal matrix,
-!!$    stored as an array.
+!!$    stored as an array. In this implementation, the diagonal matrix is on the right.
 !!$    INPUT ARGUMENTS:
 !!$    - matrix    : (REAL*8) the input matrix 
 !!$    - norms     : (REAL*8) the input vector which represents the
@@ -498,7 +504,7 @@ CONTAINS
 !!$    - mtdg      : (REAL*8) the result of the matrix-matrix multiplication
 !!$===========================================================================
     ! INOUT VARIABLES
-    REAL*8 :: matrix(:,:), diagonal(:)
+    REAL*8, INTENT(IN) :: matrix(:,:), diagonal(:)
     REAL*8 :: mtdg(SIZE(matrix,1),SIZE(matrix,2))
     ! UTILITY VARIABLES
     INTEGER*4 :: ii
@@ -513,6 +519,36 @@ CONTAINS
   END FUNCTION MTDG
 
 
+  FUNCTION DGMT(diagonal,matrix)
+!!$===========================================================================
+!!$    This function computes the product of a diagonal matrix, stored as an array,
+!!$    and a matrix. In this implementation, the diagonal matrix is on the right.
+!!$    INPUT ARGUMENTS:
+!!$    - matrix    : (REAL*8) the input matrix 
+!!$    - diagonal  : (REAL*8) the input vector which represents the
+!!$                  diagonal matrix
+!!$    OUTPUT:
+!!$    - dgmt      : (REAL*8) the result of the matrix-matrix multiplication
+!!$===========================================================================
+    ! INOUT VARIABLES
+    REAL*8, INTENT(IN) :: matrix(:,:), diagonal(:)
+    REAL*8 :: dgmt(SIZE(matrix,1),SIZE(matrix,2))
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii
+
+    IF (SIZE(matrix,1).NE.SIZE(diagonal)) THEN
+       WRITE(*,*) "WARNING (DGMT): sizes do not match!"
+    END IF
+    DO ii=1,SIZE(matrix,1)
+       dgmt(ii,:)=matrix(ii,:)*diagonal(ii)
+    END DO
+    RETURN
+  END FUNCTION DGMT
+
+
+
+
+  
   
   SUBROUTINE COL_NORM(matrix,norms)
 !!$===========================================================================
