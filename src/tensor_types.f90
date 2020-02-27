@@ -50,6 +50,14 @@ MODULE TENSOR_TYPES
      TYPE(DTENSOR3) :: cores
   END TYPE  tensor_list
 
+
+  ! INTERFACE FOR ALL-ORTHOGONALITY CHECK
+  INTERFACE IS_ALL_ORTHOGONAL
+     MODULE PROCEDURE IS_ALL_ORTHOGONAL3
+     MODULE PROCEDURE IS_ALL_ORTHOGONAL4
+  END INTERFACE IS_ALL_ORTHOGONAL
+
+  
   
 CONTAINS
 
@@ -137,5 +145,192 @@ CONTAINS
     RETURN
   END FUNCTION TENSOR4
 
+
+
+
+
+
+
+
+! ==================================================
+! ==================================================
+! CHECK PROPERTIES OF TENSORS
+! ==================================================
+! ==================================================
+
+  FUNCTION IS_ALL_ORTHOGONAL3(tensor, eps)
+    ! ===============================================================
+    ! Checks if the DTENSOR3 given as input is all-orthogonal,
+    ! following the definition given by Cichocki.
+    ! INPUT ARGUMENTS
+    ! - tensor             : (DTENSOR3) the tensor to check
+    ! - eps                : (REAL*8, OPTIONAL) the tolerance for the "=0" checks
+    ! OUTPUT ARGUMENTS
+    ! - IS_ALL_ORTHOGONAL3 : (LOGICAL) the result of the check
+    ! ===============================================================  
+    ! INOUT VARIABLES
+    TYPE(DTENSOR3) :: tensor
+    REAL*8, OPTIONAL :: eps
+    LOGICAL :: IS_ALL_ORTHOGONAL3
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii,jj,kk,blklen
+    REAL*8 :: tol=1D-5
+
+    ! FUNCTION DEFINITION
+    !----------------------------------------
+    ! All-orthogonality has 2 checks:
+    ! 1. all slices are mutually ortohogonal
+    ! 2. frobenius norms of slices in each mode are decreasing for increasing index
+    !----------------------------------------
+    IF (PRESENT(eps).AND.(eps.GT.EPSILON(1D0))) THEN
+       tol=eps
+    END IF
+    IS_ALL_ORTHOGONAL3=.TRUE.
+    ! slice 1: mutually orthogonal?
+    DO ii=1,tensor%modes(1)
+       DO jj=ii+1,tensor%modes(1)
+          IF (ABS(SUM(tensor%elems(ii,:,:)*tensor%elems(jj,:,:))).GT.tol*SIZE(tensor%elems(ii,:,:))) THEN
+             IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 1 not orth"
+          END IF
+       END DO
+    END DO
+    ! slice 2: mutually orthogonal?
+    DO ii=1,tensor%modes(2)
+       DO jj=ii+1,tensor%modes(2)
+          IF (ABS(SUM(tensor%elems(:,ii,:)*tensor%elems(:,jj,:))).GT.tol*SIZE(tensor%elems(:,ii,:))) THEN
+             IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 2 not orth"
+          END IF
+       END DO
+    END DO
+    ! slice 3: mutually orthogonal?
+    DO ii=1,tensor%modes(3)
+       DO jj=ii+1,tensor%modes(3)
+          IF (ABS(SUM(tensor%elems(:,:,ii)*tensor%elems(:,:,jj))).GT.tol*SIZE(tensor%elems(:,:,ii))) THEN
+             IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 3 not orth"
+          END IF
+       END DO
+    END DO
+    ! CHECK THE ORDERING OF THE SLICES
+    ! slice 1: ordered?
+    DO ii=1,tensor%modes(1)
+       IF (SUM(tensor%elems(ii,:,:)**2).LT.SUM(tensor%elems(ii+1,:,:)**2)) THEN
+          IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 1 not ordered"
+       END IF
+    END DO
+    ! slice 2: ordered?
+    DO ii=1,tensor%modes(2)
+       IF (SUM(tensor%elems(:,ii,:)**2).LT.SUM(tensor%elems(:,ii+1,:)**2)) THEN
+          IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 2 not ordered"
+       END IF
+    END DO
+    ! slice 3: ordered?
+    DO ii=1,tensor%modes(3)
+       IF (SUM(tensor%elems(:,:,ii)**2).LT.SUM(tensor%elems(:,:,ii+1)**2)) THEN
+          IS_ALL_ORTHOGONAL3=.FALSE.
+             !print*, "slice 3 not ordered"
+       END IF
+    END DO
+    ! RETURN THE RESULT OF THE CHECK
+    RETURN
+  END FUNCTION IS_ALL_ORTHOGONAL3
+
+
+
+  FUNCTION IS_ALL_ORTHOGONAL4(tensor, eps)
+    ! ===============================================================
+    ! Checks if the DTENSOR4 given as input is all-orthogonal,
+    ! following the definition given by Cichocki.
+    ! INPUT ARGUMENTS
+    ! - tensor             : (DTENSOR4) the tensor to check
+    ! - eps                : (REAL*8, OPTIONAL) the tolerance for the "=0" checks
+    ! OUTPUT ARGUMENTS
+    ! - IS_ALL_ORTHOGONAL3 : (LOGICAL) the result of the check
+    ! ===============================================================  
+    ! INOUT VARIABLES
+    TYPE(DTENSOR4) :: tensor
+    REAL*8, OPTIONAL :: eps
+    LOGICAL :: IS_ALL_ORTHOGONAL4
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii,jj,kk,blklen
+    REAL*8 :: tol=1D-5
+
+    ! FUNCTION DEFINITION
+    !----------------------------------------
+    ! All-orthogonality has 2 checks:
+    ! 1. all slices are mutually ortohogonal
+    ! 2. frobenius norms of slices in each mode are decreasing for increasing index
+    !----------------------------------------
+    IF (PRESENT(eps).AND.(eps.GT.EPSILON(1D0))) THEN
+       tol=eps
+    END IF
+    IS_ALL_ORTHOGONAL4=.TRUE.
+    ! slice 1: mutually orthogonal?
+    DO ii=1,tensor%modes(1)
+       DO jj=ii+1,tensor%modes(1)
+          IF (ABS(SUM(tensor%elems(ii,:,:,:)*tensor%elems(jj,:,:,:))).GT.tol*SIZE(tensor%elems(ii,:,:,:))) THEN
+             IS_ALL_ORTHOGONAL4=.FALSE.
+          END IF
+       END DO
+    END DO
+    ! slice 2: mutually orthogonal?
+    DO ii=1,tensor%modes(2)
+       DO jj=ii+1,tensor%modes(2)
+          IF (ABS(SUM(tensor%elems(:,ii,:,:)*tensor%elems(:,jj,:,:))).GT.tol*SIZE(tensor%elems(:,ii,:,:))) THEN
+             IS_ALL_ORTHOGONAL4=.FALSE.
+          END IF
+       END DO
+    END DO
+    ! slice 3: mutually orthogonal?
+    DO ii=1,tensor%modes(3)
+       DO jj=ii+1,tensor%modes(3)
+          IF (ABS(SUM(tensor%elems(:,:,ii,:)*tensor%elems(:,:,jj,:))).GT.tol*SIZE(tensor%elems(:,:,ii,:))) THEN
+             IS_ALL_ORTHOGONAL4=.FALSE.
+          END IF
+       END DO
+    END DO
+    ! slice 4: mutually orthogonal?
+    DO ii=1,tensor%modes(4)
+       DO jj=ii+1,tensor%modes(4)
+          IF (ABS(SUM(tensor%elems(:,:,:,ii)*tensor%elems(:,:,:,jj))).GT.tol*SIZE(tensor%elems(:,:,:,ii))) THEN
+             IS_ALL_ORTHOGONAL4=.FALSE.
+          END IF
+       END DO
+    END DO
+    ! CHECK THE ORDERING OF THE SLICES
+    ! slice 1: ordered?
+    DO ii=1,tensor%modes(1)
+       IF (SUM(tensor%elems(ii,:,:,:)**2).LT.SUM(tensor%elems(ii+1,:,:,:)**2)) THEN
+          IS_ALL_ORTHOGONAL4=.FALSE.
+       END IF
+    END DO
+    ! slice 2: ordered?
+    DO ii=1,tensor%modes(2)
+       IF (SUM(tensor%elems(:,ii,:,:)**2).LT.SUM(tensor%elems(:,ii+1,:,:)**2)) THEN
+          IS_ALL_ORTHOGONAL4=.FALSE.
+       END IF
+    END DO
+    ! slice 3: ordered?
+    DO ii=1,tensor%modes(3)
+       IF (SUM(tensor%elems(:,:,ii,:)**2).LT.SUM(tensor%elems(:,:,ii+1,:)**2)) THEN
+          IS_ALL_ORTHOGONAL4=.FALSE.
+       END IF
+    END DO
+    ! slice 4: ordered?
+    DO ii=1,tensor%modes(4)
+       IF (SUM(tensor%elems(:,:,:,ii)**2).LT.SUM(tensor%elems(:,:,:,ii+1)**2)) THEN
+          IS_ALL_ORTHOGONAL4=.FALSE.
+       END IF
+    END DO
+    ! RETURN THE RESULT OF THE CHECK
+    RETURN
+  END FUNCTION IS_ALL_ORTHOGONAL4
+
+
+  
   
 END MODULE TENSOR_TYPES
