@@ -168,53 +168,54 @@ PROGRAM MAIN
 
   IF (choose_method.EQ.4) THEN
      ! MPS DECOMPOSITION
+     OPEN (130,file="decomposition_parameters.dat",status="old",action="write")
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
         CALL MPS(MNIST,tens_lista,eps=epsilon)
-     ELSEIF (choose_file.EQ.2) THEN
-        ! LANDSCAPE IMAGE (3D TENSOR)
-        CALL MPS(land,tens_lista,eps=epsilon)
-     ELSEIF (choose_file.EQ.3) THEN
-        ! SHORT VIDEO (4D TENSOR)
-        CALL MPS(video,tens_lista,eps=epsilon)
-     END IF
-     IF (choose_file.EQ.1) THEN
-        ! MNIST (3D TENSOR)
         approx_MNIST = MPS_TO_TENSOR3(tens_lista)
         WRITE (out_file,"(A14,I0,A5,I0,A1,I0,A1,I0,A1,I0,A4)") &
              "../data/mnist_",num_images,"_MPS_",tens_lista(1)%cores%modes(1),"_",tens_lista(2)%cores%modes(1),&
              "_",tens_lista(3)%cores%modes(1),"_",tens_lista(3)%cores%modes(3),".csv"
+        WRITE(130,*) tens_lista(1)%cores%modes(1),tens_lista(2)%cores%modes(1),&
+             tens_lista(3)%cores%modes(1),tens_lista(3)%cores%modes(3)
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
+        CALL MPS(land,tens_lista,eps=epsilon)
         approx_land = MPS_TO_TENSOR3(tens_lista)
         WRITE (out_file,"(A13,I0,A1,I0,A5,I0,A1,I0,A1,I0,A1,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,"_MPS_",&
              tens_lista(1)%cores%modes(1),"_",tens_lista(2)%cores%modes(1),"_",tens_lista(3)%cores%modes(1),&
              "_",tens_lista(3)%cores%modes(3),".csv"
+        WRITE(130,*) tens_lista(1)%cores%modes(1),tens_lista(2)%cores%modes(1),&
+             tens_lista(3)%cores%modes(1),tens_lista(3)%cores%modes(3)
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
+        CALL MPS(video,tens_lista,eps=epsilon)
         approx_video = MPS_TO_TENSOR4(tens_lista)
         WRITE (out_file,"(A23,I0,A1,I0,A1,I0,A1,I0,A1,I0,A4)") "../data/video_144p_MPS_",tens_lista(1)%cores%modes(1),&
              "_",tens_lista(2)%cores%modes(1),"_",tens_lista(3)%cores%modes(1),"_",tens_lista(4)%cores%modes(1),&
              "_",tens_lista(4)%cores%modes(3),".csv"
+        WRITE(130,*) tens_lista(1)%cores%modes(1),tens_lista(2)%cores%modes(1),&
+             tens_lista(3)%cores%modes(1),tens_lista(4)%cores%modes(1),tens_lista(4)%cores%modes(3)
      END IF
+     CLOSE(130)
   ELSEIF (choose_method.EQ.5) THEN
      ! CP DECOMPOSITION
      rango=16
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
-        CALL CPD(MNIST,rango,lista,lambdas,error,numiter=2)
+        CALL CPD(MNIST,rango,lista,lambdas,error,numiter=10)
         core_MNIST = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(MNIST%modes)),1)
         approx_MNIST = RECO(core_MNIST,lista)
         WRITE (out_file,"(A14,I0,A5,I0,A4)") "../data/mnist_",num_images,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
-        CALL CPD(land,rango,lista,lambdas,error,numiter=20)
+        CALL NEWCPD3(land,rango,lista,lambdas,error,numiter=10)
         core_land = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(land%modes)),1)
         approx_land = RECO(core_land,lista)
         WRITE (out_file,"(A13,I0,A1,I0,A5,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
-        CALL CPD(video,rango,lista,lambdas,error,numiter=2)
+        CALL CPD(video,rango,lista,lambdas,error,numiter=10)
         core_video = TENSOR4((/rango,rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(video%modes)),1)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A23,I0,A4)") "../data/video_144p_cpd_",rango,".csv"
@@ -285,28 +286,41 @@ PROGRAM MAIN
   END IF
 
   !============================================
-  ! SAVE ON FILE
+  ! SAVE DATA ON FILE
   !============================================
-  OPEN(333,file=out_file,status="unknown",action="write")
+  ! OPEN(333,file=out_file,status="unknown",action="write")
+  ! IF (choose_file.EQ.1) THEN
+  !    ! MNIST (3D TENSOR)
+  !    DO ii=1,SIZE(approx_MNIST%elems, 1)
+  !       WRITE(333,*) approx_MNIST%elems(ii,:,:) 
+  !    END DO
+  ! ELSEIF (choose_file.EQ.2) THEN
+  !    ! LANDSCAPE IMAGE (3D TENSOR)
+  !    DO ii=1,SIZE(approx_land%elems, 1)
+  !       WRITE(333,*) approx_land%elems(ii,:,:) 
+  !    END DO
+  ! ELSEIF (choose_file.EQ.3) THEN
+  !    ! SHORT VIDEO (4D TENSOR)
+  !    DO ii=1,SIZE(approx_video%elems, 1)
+  !       WRITE(333,*) approx_video%elems(ii,:,:,:) 
+  !    END DO
+  ! END IF
+  ! CLOSE(333)
+
+  !============================================
+  ! SAVE ERROR ON FILE
+  !============================================
+  OPEN(334,file="../data/error.dat",status="unknown",action="write")
   IF (choose_file.EQ.1) THEN
      ! MNIST (3D TENSOR)
-     DO ii=1,SIZE(approx_MNIST%elems, 1)
-        WRITE(333,*) approx_MNIST%elems(ii,:,:) 
-     END DO
+     WRITE(334,*) SQRT(SUM((MNIST%elems-approx_MNIST%elems)**2))/SIZE(MNIST%elems)
   ELSEIF (choose_file.EQ.2) THEN
      ! LANDSCAPE IMAGE (3D TENSOR)
-     DO ii=1,SIZE(approx_land%elems, 1)
-        WRITE(333,*) approx_land%elems(ii,:,:) 
-     END DO
+     WRITE(334,*) SQRT(SUM((land%elems-approx_land%elems)**2))/SIZE(land%elems)
   ELSEIF (choose_file.EQ.3) THEN
      ! SHORT VIDEO (4D TENSOR)
-     DO ii=1,SIZE(approx_video%elems, 1)
-        WRITE(333,*) approx_video%elems(ii,:,:,:) 
-     END DO
+     WRITE(334,*) SQRT(SUM((video%elems-approx_video%elems)**2))/SIZE(video%elems)
   END IF
-  CLOSE(333)
-  
-  
-     
+  CLOSE(334)
 
 END PROGRAM MAIN
