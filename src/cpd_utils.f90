@@ -81,6 +81,8 @@ CONTAINS
        CALL RANDOM_NUMBER(factors(ii)%matr)
        CALL COL_NORM(factors(ii)%matr,lambdas)
     END DO
+    ! ALLOCATE FOR V
+    ALLOCATE(V(rank,rank))
     ! ALLOCATE THE RECONSTRUCTION STUFF
     ALLOCATE(tensor_rec(tensor%modes(1),PRODUCT(tensor%modes)/tensor%modes(1)))
     ALLOCATE(B_rec(PRODUCT(tensor%modes(2:)),rank))    
@@ -94,7 +96,6 @@ CONTAINS
           ! DETERMINE THE INDICES TO SKIP
           idx = PACK( (/(jj, jj=1,NN,1)/) , (/(jj, jj=1,NN,1)/)/=ii )
           ! COMPUTE V
-          ALLOCATE(V(rank,rank))
           V=1D0
           DO jj=1,SIZE(idx)
              V = V.HAD.MTML(TRANSPOSE(factors(idx(jj))%matr),factors(idx(jj))%matr)
@@ -107,12 +108,16 @@ CONTAINS
              B(1:krsize*tensor%modes(idx(jj)),:) = factors(idx(jj))%matr.KHRAO.B(1:krsize,:)
              krsize=krsize*tensor%modes(idx(jj))
           END DO
+          print*, "RANK SHOULD BE", rank
+          print*, "Shape of V", SHAPE(V)
+          print*, "Shape of B", SHAPE(B)
+          print*, "Chosen indices", idx
+          print*, "last columns of B", SUM(B(:,SIZE(B,2)))
           ! UPDATE THE ii-th FACTOR MATRIX 
           factors(ii)%matr = MTML( MTML( (tensor.MODE.ii),B ), PINV(V) )
           CALL COL_NORM(factors(ii)%matr, lambdas)
-          ! DEALLOCATE B AND V
+          ! DEALLOCATE B
           DEALLOCATE(B)
-          DEALLOCATE(V)
        END DO
        ! RECONSTRUCT THE TENSOR
        krsize = tensor%modes(2)*tensor%modes(3)
@@ -275,5 +280,108 @@ CONTAINS
   END FUNCTION TO_IDENTITY
 
 
+
+
+  ! ====================================
+  ! ====================================
+  ! new cpd maybe
+  ! ====================================
+  ! ====================================
+
+  SUBROUTINE NEWCPD3(tensor, rank, factors, lambdas, error, thresh, numiter, verbose)
+    TYPE(DTENSOR3) :: tensor
+    INTEGER*4 :: rank
+    TYPE(MATRIX_LIST) :: factors(3)
+    REAL*8, ALLOCATABLE :: lambdas(:)
+    REAL*8 :: error
+    REAL*8, OPTIONAL :: thresh
+    INTEGER*4, OPTIONAL :: numiter
+    LOGICAL, OPTIONAL :: verbose
+    ! UTILITY VARIABLES
+    INTEGER*4 :: ii,jj,rel_err=1,cnt=0,NN=SIZE(factors)
+    INTEGER*4 :: idx(SIZE(factors)-1)
+    REAL*8 :: tol=5D-5
+    INTEGER*4 :: maxiter=100
+    REAL*8, ALLOCATABLE :: V(:,:), B(:,:)
+    REAL*8, ALLOCATABLE :: B_rec(:,:), tens_rec(:,:)
+    REAL*8 :: newerror, relative_error
+    
+    ! FUNCTION BODY
+    ! set optional parameters
+    IF (PRESENT(numiter).AND.(numiter.GE.1)) THEN
+       maxiter = numiter
+    END IF
+    IF (PRESENT(thresh).AND.(thresh.GE.1D-15)) THEN
+       tol = thresh
+    END IF
+    ! allocate the vector of lambdas
+    ALLOCATE(lambdas(rank))
+    ! randomly initialize the factor matrices
+    DO ii=1,NN
+       ! factor matrices are (I_n)x(R)
+       ALLOCATE( factors(ii)%matr(tensor%modes(ii),rank) )
+       ! random init
+       CALL RANDOM_NUMBER(factors(ii)%matr)
+       ! and normalize just in case
+       CALL COL_NORM(factors(ii)%matr,lambdas)
+    END DO
+    ! allocate V, B and B_rec, tens_rec.
+    ! - V has always the same shape, rank X rank
+    ! - B changes shape. using the properties of allocatable variables,
+    !   it is allocated only once, and reshape/reset when needed.
+    !   Initially, it is (I_2 x I_3 x ... x I_N) X (rank)
+    ! - B_rec is used to compute the reconstruciton error.
+    !   It is the cumulative khatri rao product from 2 onwards, so always the same shape
+    ! - tens_rec stores the reconstruction, and has always the same shape
+    ALLOCATE(V(rank,rank))
+    ALLOCATE(B(PRODUCT(tensor%modes(2:)),rank))
+    ALLOCATE(B(PRODUCT(tensor%modes(2:)),rank))
+    ALLOCATE(tens_rec(tensor%modes(1), PRODUCT(tensor%modes(2:))))
+    ! entry condition: relative error and number of iterations
+    DO WHILE ((rel_err.GT.tol).AND.(cnt.LT.maxiter))
+       ! update the iterations counter
+       cnt=cnt+1
+       ! now, loop over the factor matrices
+       DO ii=1,NN
+          ! create an array where the needed indices are stored
+          idx = PACK( (/(jj,jj=1,NN,1)/), (/(jj,jj=1,NN,1)/)/=1 )
+          ! compute the matrix V
+          V = 1D0
+          DO jj=1,NN-1
+             V=V.HAD.MTML(TRANSPOSE(factors(idx(jj))%matr),factors(idx(jj))%matr)
+          END DO
+          ! compute the matrix B, which is a cumulative khatri rao
+          ! the first passage is just the KR product of the first two matrices
+          B = RESHAPE(B, (/ tensor%modes(idx(1))*tensor%modes(idx(2)), rank /) )
+          B = factors(idx(2))%matr.KHRAO.factors(idx(1))%matr
+          DO jj=3,NN-1
+             B = factors(idx(jj))%matr.KHRAO.B
+          END DO
+          ! now, store the results in the right factor matrix
+          factors(ii)%matr = MTML( tensor.MODE.ii, MTML( B,PINV(V) ) )
+          ! normalize the columns of the factor matrix, and store the norms in lambdas
+          CALL COL_NORM(factors(ii)%matr,lambdas)         
+       END DO
+       ! now, compute the error on the reconstruction
+       ! first, compute the transposed cumulative khatri rao
+       B = RESHAPE(B, (/tensor%modes(3)*tensor%modes(2),rank/) )
+       B = factors(3)%matr.KHRAO.factors(2)%matr
+       DO ii=4,NN
+          B = factors(ii)%matr.KHRAO.B
+       END DO
+       ! then combine everything 
+       tens_rec = MTML( MTDG(factors(1)%matr,lambdas), TRANSPOSE(B))
+       newerror = SQRT(SUM( ((tensor.MODE.1)-tens_rec)**2 ))/SIZE(tensor%elems)
+       ! and compute the relative error
+       relative_error = ABS((error-newerror)/error)
+       IF (PRESENT(verbose).AND.verbose) THEN
+          PRINT*, cnt, newerror, relative_error
+       END IF
+       error=newerror
+    END DO
+  END SUBROUTINE NEWCPD3
+
+
+  
   
 END MODULE CPD_UTILS
