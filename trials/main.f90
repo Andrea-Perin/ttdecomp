@@ -90,19 +90,15 @@ PROGRAM MAIN
   OPEN (129,file="decomposition_parameters.dat",status="old",action="read")
   IF (choose_method.EQ.4) THEN
      READ (129, *) epsilon
-     !epsilon = 5D-2
-  ELSEIF (choose_method.EQ.4) THEN
+  ELSEIF (choose_method.EQ.5) THEN
      READ (129, *) rango
-     !rango = 16
   ELSEIF ((choose_method.GE.6).AND.(choose_method.LE.8)) THEN
      IF ((choose_file.EQ.1).OR.(choose_file.EQ.2)) THEN
         ALLOCATE(ranks(3))
         READ (129, *) ranks(:)
-        !ranks = (/ 10,3,3 /)
      ELSEIF (choose_file.EQ.3) THEN
         ALLOCATE(ranks(4))
         READ (129, *) ranks(:)
-        !ranks = (/ 64,64,64,3 /)
      END IF
   END IF
   CLOSE(129)
@@ -200,22 +196,21 @@ PROGRAM MAIN
      CLOSE(130)
   ELSEIF (choose_method.EQ.5) THEN
      ! CP DECOMPOSITION
-     rango=16
      IF (choose_file.EQ.1) THEN
         ! MNIST (3D TENSOR)
-        CALL CPD(MNIST,rango,lista,lambdas,error,numiter=10)
+        CALL CPD(MNIST,rango,lista,lambdas,error,numiter=100)
         core_MNIST = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(MNIST%modes)),1)
         approx_MNIST = RECO(core_MNIST,lista)
         WRITE (out_file,"(A14,I0,A5,I0,A4)") "../data/mnist_",num_images,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.2) THEN
         ! LANDSCAPE IMAGE (3D TENSOR)
-        CALL NEWCPD3(land,rango,lista,lambdas,error,numiter=10)
+        CALL NEWCPD3(land,rango,lista,lambdas,error,numiter=500)
         core_land = TENSOR3((/rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(land%modes)),1)
         approx_land = RECO(core_land,lista)
         WRITE (out_file,"(A13,I0,A1,I0,A5,I0,A4)") "../data/land_",x_pixels,"_",y_pixels,"_cpd_",rango,".csv"
      ELSEIF (choose_file.EQ.3) THEN
         ! SHORT VIDEO (4D TENSOR)
-        CALL CPD(video,rango,lista,lambdas,error,numiter=10)
+        CALL CPD(video,rango,lista,lambdas,error,numiter=100)
         core_video = TENSOR4((/rango,rango,rango,rango/),TO_IDENTITY(lambdas,SIZE(video%modes)),1)
         approx_video = RECO(core_video,lista)
         WRITE (out_file,"(A23,I0,A4)") "../data/video_144p_cpd_",rango,".csv"
@@ -288,24 +283,24 @@ PROGRAM MAIN
   !============================================
   ! SAVE DATA ON FILE
   !============================================
-  ! OPEN(333,file=out_file,status="unknown",action="write")
-  ! IF (choose_file.EQ.1) THEN
-  !    ! MNIST (3D TENSOR)
-  !    DO ii=1,SIZE(approx_MNIST%elems, 1)
-  !       WRITE(333,*) approx_MNIST%elems(ii,:,:) 
-  !    END DO
-  ! ELSEIF (choose_file.EQ.2) THEN
-  !    ! LANDSCAPE IMAGE (3D TENSOR)
-  !    DO ii=1,SIZE(approx_land%elems, 1)
-  !       WRITE(333,*) approx_land%elems(ii,:,:) 
-  !    END DO
-  ! ELSEIF (choose_file.EQ.3) THEN
-  !    ! SHORT VIDEO (4D TENSOR)
-  !    DO ii=1,SIZE(approx_video%elems, 1)
-  !       WRITE(333,*) approx_video%elems(ii,:,:,:) 
-  !    END DO
-  ! END IF
-  ! CLOSE(333)
+  OPEN(333,file=out_file,status="unknown",action="write")
+  IF (choose_file.EQ.1) THEN
+     ! MNIST (3D TENSOR)
+     DO ii=1,SIZE(approx_MNIST%elems, 1)
+        WRITE(333,*) approx_MNIST%elems(ii,:,:) 
+     END DO
+  ELSEIF (choose_file.EQ.2) THEN
+     ! LANDSCAPE IMAGE (3D TENSOR)
+     DO ii=1,SIZE(approx_land%elems, 1)
+        WRITE(333,*) approx_land%elems(ii,:,:) 
+     END DO
+  ELSEIF (choose_file.EQ.3) THEN
+     ! SHORT VIDEO (4D TENSOR)
+     DO ii=1,SIZE(approx_video%elems, 1)
+        WRITE(333,*) approx_video%elems(ii,:,:,:) 
+     END DO
+  END IF
+  CLOSE(333)
 
   !============================================
   ! SAVE ERROR ON FILE
@@ -322,5 +317,5 @@ PROGRAM MAIN
      WRITE(334,*) SQRT(SUM((video%elems-approx_video%elems)**2))/SIZE(video%elems)
   END IF
   CLOSE(334)
-
+  
 END PROGRAM MAIN
