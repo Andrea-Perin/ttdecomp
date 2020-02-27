@@ -305,6 +305,7 @@ CONTAINS
     REAL*8, ALLOCATABLE :: V(:,:), B(:,:)
     REAL*8, ALLOCATABLE :: B_rec(:,:), tens_rec(:,:)
     REAL*8 :: newerror, relative_error
+
     
     ! FUNCTION BODY
     ! set optional parameters
@@ -327,14 +328,11 @@ CONTAINS
     END DO
     ! allocate V, B and B_rec, tens_rec.
     ! - V has always the same shape, rank X rank
-    ! - B changes shape. using the properties of allocatable variables,
-    !   it is allocated only once, and reshape/reset when needed.
-    !   Initially, it is (I_2 x I_3 x ... x I_N) X (rank)
+    ! - B changes shape. Initially, it is (I_2 x I_3 x ... x I_N) X (rank)
     ! - B_rec is used to compute the reconstruciton error.
     !   It is the cumulative khatri rao product from 2 onwards, so always the same shape
     ! - tens_rec stores the reconstruction, and has always the same shape
     ALLOCATE(V(rank,rank))
-    ALLOCATE(B(PRODUCT(tensor%modes(2:)),rank))
     ALLOCATE(B_rec(PRODUCT(tensor%modes(2:)),rank))
     ALLOCATE(tens_rec(tensor%modes(1), PRODUCT(tensor%modes(2:))))
     ! entry condition: relative error and number of iterations
@@ -344,23 +342,25 @@ CONTAINS
        ! now, loop over the factor matrices
        DO ii=1,NN
           ! create an array where the needed indices are stored
-          idx = PACK( (/(jj,jj=1,NN,1)/), (/(jj,jj=1,NN,1)/)/=1 )
+          idx = PACK( (/(jj,jj=1,NN,1)/), (/(jj,jj=1,NN,1)/)/=ii )
           ! compute the matrix V
           V = 1D0
-          DO jj=1,NN-1
+          DO jj=1,SIZE(idx)
              V=V.HAD.MTML(TRANSPOSE(factors(idx(jj))%matr),factors(idx(jj))%matr)
           END DO
           ! compute the matrix B, which is a cumulative khatri rao
+          ! its size is the following
+          ALLOCATE(B( PRODUCT(tensor%modes(idx(:))), rank ))
           ! the first passage is just the KR product of the first two matrices
-          B = RESHAPE(B, (/ tensor%modes(idx(1))*tensor%modes(idx(2)), rank /) )
-          B = factors(idx(2))%matr.KHRAO.factors(idx(1))%matr
+          B(1:PRODUCT(tensor%modes(idx(:2))),:) = factors(idx(2))%matr.KHRAO.factors(idx(1))%matr
           DO jj=3,NN-1
-             B = factors(idx(jj))%matr.KHRAO.B
+             B(1:PRODUCT(tensor%modes(idx(:jj))),:) = factors(idx(jj))%matr.KHRAO.B(1:PRODUCT(tensor%modes(idx(:jj-1))),:)
           END DO
           ! now, store the results in the right factor matrix
           factors(ii)%matr = MTML( tensor.MODE.ii, MTML( B,PINV(V) ) )
+          DEALLOCATE(B)
           ! normalize the columns of the factor matrix, and store the norms in lambdas
-          CALL COL_NORM(factors(ii)%matr,lambdas)         
+          CALL COL_NORM(factors(ii)%matr,lambdas)
        END DO
        ! now, compute the error on the reconstruction
        ! first, compute the transposed cumulative khatri rao
@@ -370,7 +370,7 @@ CONTAINS
           B_rec = factors(ii)%matr.KHRAO.B_rec
        END DO
        ! then combine everything 
-       tens_rec = MTML( factors(1)%matr.MDDOT.lambdas, TRANSPOSE(B))
+       tens_rec = MTML( factors(1)%matr.MDDOT.lambdas, TRANSPOSE(B_rec))
        newerror = SQRT(SUM( ((tensor.MODE.1)-tens_rec)**2 ))/SIZE(tensor%elems)
        ! and compute the relative error
        relative_error = ABS((error-newerror)/error)
